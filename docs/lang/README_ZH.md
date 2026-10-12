@@ -173,6 +173,10 @@ git clone https://github.com/titanwings/distilly <DISTILLY_SKILL_DIR>
 
 ## 🚀 使用
 
+**刚装好个人 Agent？** 说 *“用 Distilly 建立我的画像”*。Distilly 会用大约五分钟问你几个问题，给你确认画像全文，然后把简短摘要写进 Agent 每次会话都会读的文件（Claude Code 是 `~/.claude/CLAUDE.md`，OpenClaw 是 `USER.md`）。完整画像只保存在本地 `~/.distilly/owner/profile.md`。
+
+为别人建画像：
+
 在 Agent 中说：
 
 > 用 Distilly 为 `<人物>` 创建一个 Person Profile。

@@ -165,13 +165,40 @@ CHARACTER_PRESETS = {
         "skill_name_prefix": "celebrity",
         "legacy_type": "celebrity",
     },
+    "owner": {
+        "character": "owner",
+        "display_name": "Owner",
+        "identity_label": "Owner",
+        "gallery_category": "Self",
+        "source_domain": "personal",
+        "relationship_to_user": "self",
+        "is_real_person": True,
+        "is_public_figure": False,
+        "is_fictional": False,
+        "command_aliases": ["/distilly owner"],
+        "knowledge_dirs": [],
+        "storage_root": "~/.distilly/owner",
+        "prompt_bundle": {
+            "preset": "distilly.owner.v1",
+            "intake": "prompts/owner/intake.md",
+            "profile_builder": "prompts/owner/profile_builder.md",
+        },
+        # The owner profile is context about the agent's own user, not a
+        # role-play Skill, so it is written by tools/owner_profile.py.
+        "output_mode": "host_user_context",
+        "writer": "tools/owner_profile.py",
+        "legacy_storage_root": "~/.distilly/owner",
+        "skill_name_prefix": "owner",
+        "legacy_type": "owner",
+    },
 }
 
 
 CHARACTER_ALIASES = {
     "ex": "relationship",
-    "self": "relationship",
-    "yourself": "relationship",
+    "self": "owner",
+    "yourself": "owner",
+    "me": "owner",
     "icon": "celebrity",
     "character": "celebrity",
     "fictional-character": "celebrity",

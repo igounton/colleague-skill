@@ -1,6 +1,6 @@
 ---
 name: distilly
-description: "Distill colleague, relationship, or celebrity source material into reusable Person Profiles for agents."
+description: "Set up the owner profile so a personal agent knows who it works for (first-run setup, \"get to know me\"), or distill colleague, relationship, or celebrity source material into reusable Person Profiles for agents."
 argument-hint: "[character] [name-or-slug]"
 version: "1.0.0"
 user-invocable: true
@@ -29,6 +29,7 @@ allowed-tools: Read, Write, Edit, Bash
 - "我想蒸馏一个人"
 - "新建一个 skill"
 - "给我做一个 XX 的 skill"
+- "初始化" / "认识一下我" / "了解我" / "建立我的画像"，或宿主首次运行且还没有本人画像 → 直接进入下方“本人画像（owner）”流程
 
 兼容宿主：
 - Claude Code
@@ -98,9 +99,12 @@ Grok Bot 可以把流程保存为 private Skill，但目前没有官方的本地
 
 如果用户使用的是 `/distilly`，先确认本次要蒸馏的是哪一类：
 
-1. `colleague`
-2. `relationship`
-3. `celebrity`
+1. `owner`：用户本人（个人 Agent 首次初始化时的默认选项）
+2. `colleague`
+3. `relationship`
+4. `celebrity`
+
+如果是 `owner`（包括“蒸馏我自己”），不要继续下面的 Step 1–5，改走“本人画像（owner）”流程。
 
 如果上层宿主已经显式把 family 传进来，则直接固定对应的 character family。
 
@@ -655,6 +659,28 @@ Persona 摘要：
 
 ---
 
+## 本人画像（owner）
+
+为 Agent 的主人本人建立画像，让 Agent 从第一次对话起就知道自己在为谁工作。它是 Agent 每次会话都读取的**背景资料**，不是角色扮演 Skill：不要生成 `{character}-{slug}` Skill，也不要写“你是 XX”。
+
+1. 按 `{distilly_skill_root}/prompts/owner/intake.md` 进行三轮问答，全部可跳过；如果宿主的用户文件里已有内容，先读取，只问缺失的部分。
+2. 按 `{distilly_skill_root}/prompts/owner/profile_builder.md` 生成画像，写到 `/tmp/distilly_owner_profile.md`，把全文给用户确认并按其修改。
+3. 用户确认后保存：
+   ```bash
+   python3 "{distilly_skill_root}/tools/owner_profile.py" save --profile /tmp/distilly_owner_profile.md
+   ```
+4. 写入当前宿主的常驻用户文件。先 `--dry-run` 给用户看改动，同意后再执行：
+   ```bash
+   python3 "{distilly_skill_root}/tools/owner_profile.py" link --host claude-code --dry-run
+   python3 "{distilly_skill_root}/tools/owner_profile.py" link --host claude-code
+   ```
+   Claude Code 写入 `~/.claude/CLAUDE.md`，OpenClaw（`--host openclaw`）写入工作区的 `USER.md`。其他宿主暂不支持，告诉用户完整画像保存在 `~/.distilly/owner/profile.md`。
+5. 只改动 Distilly 标记之间的内容，标记外的文字不动，旧文件会自动备份。删除临时文件 `/tmp/distilly_owner_profile.md`。
+
+更新：用户说“这不对”或有新信息时，修改完整画像，重新 `save` 和 `link`。撤销：`owner_profile.py unlink --host <host>`。
+
+---
+
 ## 进化模式：追加文件
 
 用户提供新文件或文本时：
@@ -773,6 +799,7 @@ Activate when the user says any of the following:
 - "I want to distill someone"
 - "Create a new skill"
 - "Make a skill for XX"
+- "Set up my profile" / "Get to know me" / "Who am I to you", or a host's first run with no owner profile yet → go straight to the "Owner Profile" flow below
 
 Compatible hosts:
 - Claude Code
@@ -844,9 +871,12 @@ The Lark-labelled compatibility collectors currently connect to the China-region
 
 If the user entered `/distilly`, first confirm which family should be distilled:
 
-1. `colleague`
-2. `relationship`
-3. `celebrity`
+1. `owner`: the user themself (the default on a personal agent's first run)
+2. `colleague`
+3. `relationship`
+4. `celebrity`
+
+For `owner` (including "distill myself"), do not continue with Steps 1-5 below; use the "Owner Profile" flow instead.
 
 If the host already passed an explicit family, lock the character family immediately.
 
@@ -1399,6 +1429,28 @@ After user confirmation, do not hand-build a `skills/colleague/{slug}`-style tre
    - if no verified external sources exist, keep the FAIL state and explain what source material is still missing
 
 When reporting success, return the correct family-specific location instead of assuming colleague storage.
+
+---
+
+## Owner Profile
+
+Build a profile of the agent's owner so the agent knows who it works for from the first session. It is **context** the agent reads every session, not a role-play Skill: do not generate a `{character}-{slug}` Skill and never write "you are <user>".
+
+1. Run the three-round interview in `{distilly_skill_root}/prompts/owner/intake.md`. Every question is skippable. If the host's user file already has content, read it first and ask only about what is missing.
+2. Build the profile with `{distilly_skill_root}/prompts/owner/profile_builder.md`, write it to `/tmp/distilly_owner_profile.md`, show the full text to the user and apply their corrections.
+3. After the user approves, save it:
+   ```bash
+   python3 "{distilly_skill_root}/tools/owner_profile.py" save --profile /tmp/distilly_owner_profile.md
+   ```
+4. Link it into the current host's always-on user file. Show the `--dry-run` result first and write only after the user agrees:
+   ```bash
+   python3 "{distilly_skill_root}/tools/owner_profile.py" link --host claude-code --dry-run
+   python3 "{distilly_skill_root}/tools/owner_profile.py" link --host claude-code
+   ```
+   Claude Code uses `~/.claude/CLAUDE.md`; OpenClaw (`--host openclaw`) uses the workspace `USER.md`. Other hosts are not supported yet; tell the user the full profile is at `~/.distilly/owner/profile.md`.
+5. Only the text between the Distilly markers changes; everything else in the file is left alone and the previous file is backed up. Delete `/tmp/distilly_owner_profile.md` afterwards.
+
+Updates: when the user corrects something or adds information, edit the full profile, then run `save` and `link` again. To undo: `owner_profile.py unlink --host <host>`.
 
 ---
 

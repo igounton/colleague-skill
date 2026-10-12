@@ -604,6 +604,14 @@ def main() -> None:
         args.install_claude_skill or auto_install_default
     ) and not args.no_install_claude_skill
 
+    if requested_character == "owner":
+        print(
+            "error: the owner profile is not a role-play Skill; "
+            "use tools/owner_profile.py save/link instead",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     if args.action == "list":
         base_dir = resolve_existing_storage_root(requested_character, base_dir_arg=args.base_dir)
         skills = list_skills(base_dir)

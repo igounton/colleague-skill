@@ -190,6 +190,10 @@ Host paths, migration, Windows, generated-profile installation, and credential s
 
 ## 🚀 Usage
 
+**New personal agent?** Say *"Use Distilly to set up my profile."* Distilly interviews you for about five minutes, shows you the profile, then adds a short summary to the file your agent reads every session (`~/.claude/CLAUDE.md` for Claude Code, `USER.md` for OpenClaw). The full profile stays local at `~/.distilly/owner/profile.md`.
+
+To profile someone else:
+
 In your Agent, say:
 
 > Use Distilly to create a Person Profile for `<person>`.
