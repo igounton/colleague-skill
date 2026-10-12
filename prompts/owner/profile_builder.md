@@ -32,6 +32,12 @@ Write about the owner in the third person or as directives to the agent
 ## Tools and accounts
 ## Boundaries and dislikes
 ## Open questions
+## Sources
+
+| Fact | Source | Date |
+|------|--------|------|
+| Prefers short replies | interview | {YYYY-MM-DD} |
+| Deep work 9-12 on weekdays | calendar (inferred) | {YYYY-MM-DD} |
 ```
 
 Rules:
@@ -44,5 +50,13 @@ Rules:
 3. Every line must come from the owner's answers or material. Mark inferences
    with `(inferred)` and list unknowns under `## Open questions`.
 4. Follow the privacy rules in `prompts/owner/intake.md`.
+5. Every fact in the profile has a row in `## Sources`. Use one of these source
+   labels: `interview`, `host memory`, `user file`, `calendar`, `mail`, `docs`,
+   `code`, `export: <name>`. Keep the summary bullets free of source tags; the
+   table carries them.
+6. When sources disagree, prefer what the owner said in the interview, then
+   newer over older. List unresolved conflicts under `## Open questions`.
+7. The summary limit depends on the host: the installer refuses a summary that
+   is too long for it (`tools/owner_profile.py`).
 
 Show the full profile to the owner and apply their corrections before saving.

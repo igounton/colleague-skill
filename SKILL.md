@@ -663,7 +663,7 @@ Persona 摘要：
 
 为 Agent 的主人本人建立画像，让 Agent 从第一次对话起就知道自己在为谁工作。它是 Agent 每次会话都读取的**背景资料**，不是角色扮演 Skill：不要生成 `{character}-{slug}` Skill，也不要写“你是 XX”。
 
-1. 按 `{distilly_skill_root}/prompts/owner/intake.md` 进行三轮问答，全部可跳过；如果宿主的用户文件里已有内容，先读取，只问缺失的部分。
+1. 按 `{distilly_skill_root}/prompts/owner/intake.md` 收集信息：先看宿主已经知道什么（宿主记忆、已有的用户文件、已连接的工具），再问缺失的部分；之后可选地读取已连接的日历、邮件、文档、代码或用户给的导出文件，每项读取前都先问用户，且只读不写。全程只用宿主自己的工具，不要求用户提供 API key 或配置 OAuth；飞书、钉钉、Slack 采集器不用于这个流程。
 2. 按 `{distilly_skill_root}/prompts/owner/profile_builder.md` 生成画像，写到 `/tmp/distilly_owner_profile.md`，把全文给用户确认并按其修改。
 3. 用户确认后保存：
    ```bash
@@ -1436,7 +1436,7 @@ When reporting success, return the correct family-specific location instead of a
 
 Build a profile of the agent's owner so the agent knows who it works for from the first session. It is **context** the agent reads every session, not a role-play Skill: do not generate a `{character}-{slug}` Skill and never write "you are <user>".
 
-1. Run the three-round interview in `{distilly_skill_root}/prompts/owner/intake.md`. Every question is skippable. If the host's user file already has content, read it first and ask only about what is missing.
+1. Gather information with `{distilly_skill_root}/prompts/owner/intake.md`: first check what the host already knows (host memory, existing user files, connected tools), then ask only about what is missing. Optionally read connected calendar, mail, documents, code, or exports the user provides; ask before each one and read only. Use only the host's own tools; never ask for API keys or OAuth setup on this path, and do not use the Lark, DingTalk or Slack collectors here.
 2. Build the profile with `{distilly_skill_root}/prompts/owner/profile_builder.md`, write it to `/tmp/distilly_owner_profile.md`, show the full text to the user and apply their corrections.
 3. After the user approves, save it:
    ```bash

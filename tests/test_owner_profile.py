@@ -152,6 +152,30 @@ class OwnerProfileTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             owner_profile.resolve_host_file("codex")
 
+    def test_summary_limit_per_host(self) -> None:
+        self.assertEqual(owner_profile.summary_limit("openclaw"), 3000)
+        self.assertEqual(owner_profile.summary_limit("claude"), 3000)
+        self.assertEqual(owner_profile.summary_limit(None), owner_profile.DEFAULT_MAX_SUMMARY_CHARS)
+        self.assertEqual(owner_profile.summary_limit("openclaw", 100), 100)
+        with mock.patch.dict(owner_profile.HOST_SUMMARY_LIMITS, {"openclaw": 10}):
+            self.assertEqual(owner_profile.summary_limit("openclaw"), 10)
+
+    def test_cli_link_refuses_summary_over_host_limit(self) -> None:
+        env = dict(os.environ, DISTILLY_OWNER_HOME=str(self.home))
+        script = str(TOOLS_DIR / "owner_profile.py")
+        subprocess.run(
+            [sys.executable, script, "save", "--profile", str(self.profile_source)],
+            check=True, env=env, capture_output=True,
+        )
+        result = subprocess.run(
+            [sys.executable, script, "link", "--target", str(self.tmp / "USER.md"),
+             "--max-summary-chars", "10"],
+            env=env, capture_output=True, text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("keep it under 10", result.stderr)
+        self.assertFalse((self.tmp / "USER.md").exists())
+
     def test_cli_save_and_link(self) -> None:
         env = dict(os.environ, DISTILLY_OWNER_HOME=str(self.home))
         target = self.tmp / "USER.md"
@@ -182,6 +206,16 @@ class OwnerProfileTest(unittest.TestCase):
         self.assertIn("tools/owner_profile.py", content)
         for prompt in ("intake.md", "profile_builder.md"):
             self.assertTrue((REPO_ROOT / "prompts" / "owner" / prompt).exists())
+
+    def test_owner_prompts_document_sources(self) -> None:
+        intake = (REPO_ROOT / "prompts" / "owner" / "intake.md").read_text(encoding="utf-8")
+        builder = (REPO_ROOT / "prompts" / "owner" / "profile_builder.md").read_text(encoding="utf-8")
+        self.assertIn("Step 0", intake)
+        self.assertIn("Host memory", intake)
+        self.assertIn("never asks for API keys", intake)
+        self.assertIn("## Sources", builder)
+        # The Sources section must come after the summary so it is never linked.
+        self.assertLess(builder.index("## Always-on summary"), builder.index("## Sources"))
 
 
 if __name__ == "__main__":

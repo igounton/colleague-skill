@@ -65,6 +65,24 @@ HOST_USER_FILES = {
 
 HOST_ALIASES = {"claude": "claude-code"}
 
+# Always-on summary limits per host, in characters. OpenClaw's USER.md has its
+# own 4,000-character budget, shared with anything else the user keeps there.
+# Claude Code has no hard limit on ~/.claude/CLAUDE.md, but it is loaded into
+# every session, so keep the same budget.
+HOST_SUMMARY_LIMITS = {
+    "claude-code": DEFAULT_MAX_SUMMARY_CHARS,
+    "openclaw": DEFAULT_MAX_SUMMARY_CHARS,
+}
+
+
+def summary_limit(host: str | None, override: int | None = None) -> int:
+    """Return the summary limit for a host, or an explicit override."""
+    if override is not None:
+        return override
+    if host:
+        return HOST_SUMMARY_LIMITS.get(HOST_ALIASES.get(host, host), DEFAULT_MAX_SUMMARY_CHARS)
+    return DEFAULT_MAX_SUMMARY_CHARS
+
 
 def resolve_host_file(host: str) -> Path:
     host = HOST_ALIASES.get(host, host)
@@ -227,14 +245,21 @@ def main() -> None:
     sub.add_parser("where", help="Print the owner profile path and host user files")
 
     for command in (save, link):
-        command.add_argument("--max-summary-chars", type=int, default=DEFAULT_MAX_SUMMARY_CHARS)
+        command.add_argument(
+            "--max-summary-chars",
+            type=int,
+            help="Override the always-on summary limit (default: the host's limit)",
+        )
 
     args = parser.parse_args()
     profile_path = owner_home() / "profile.md"
 
     try:
         if args.action == "save":
-            saved = save_profile(Path(args.profile).expanduser(), max_chars=args.max_summary_chars)
+            saved = save_profile(
+                Path(args.profile).expanduser(),
+                max_chars=summary_limit(None, args.max_summary_chars),
+            )
             print(f"Owner profile saved: {saved}")
             return
 
@@ -251,7 +276,8 @@ def main() -> None:
         if args.action == "link":
             if not profile_path.exists():
                 raise FileNotFoundError(f"no owner profile at {profile_path}; run 'save' first")
-            updated, backup = link_profile(target, profile_path, args.dry_run, args.max_summary_chars)
+            max_chars = summary_limit(None if args.target else args.host, args.max_summary_chars)
+            updated, backup = link_profile(target, profile_path, args.dry_run, max_chars)
         else:
             updated, backup = unlink_profile(target, args.dry_run)
     except (ValueError, FileNotFoundError) as error:
