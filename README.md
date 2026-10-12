@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/social-preview-distilly-v9.png" alt="Distilly — Distill how they think into Person Profiles for Agents" width="100%">
+<img src="docs/social-preview-distilly-v10.png" alt="Distilly — Distill how they think into Person Profiles for Agents" width="100%">
 
 <br>
 
