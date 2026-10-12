@@ -4,7 +4,7 @@
 
 **Anteriormente: Colleague Skill / colleague-skill.**
 
-![Distilly — Distill how they think into Person Profiles for Agents](../social-preview-distilly-v7.png)
+![Distilly — Distill how they think into Person Profiles for Agents](../social-preview-distilly-v8.png)
 
 ### **Distill how they think.**
 
