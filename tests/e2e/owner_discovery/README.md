@@ -21,4 +21,4 @@ cat mcp_calls.log home/.claude/CLAUDE.md home/.distilly/owner/profile.md
 The numbering in turn 2 depends on the list the agent proposed in turn 1.
 `mcp_calls.log` records every connector call, so you can check that only the
 chosen sources were read and no write tool (`send_message`, `create_post`) was
-called. A recorded run is in `docs/examples/owner-discovery-e2e.md`.
+called. Recorded runs are kept out of the repository.

@@ -104,12 +104,11 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         self.assertIn("`/skill:distilly`", content)
         self.assertNotIn("name: dot-skill", content)
         self.assertNotIn("`/dot-skill`", content)
-        self.assertIn("兼容宿主", content)
         self.assertIn("compatible hosts", content.lower())
         self.assertIn("Grok Build", content)
         self.assertIn("Grok Bot", content)
         self.assertIn("Pi coding agent", content)
-        self.assertIn("管理操作", content)
+        self.assertIn("Management Operations", content)
         self.assertIn("tools/skill_writer.py", content)
         self.assertIn("tools/research/xquik_public_posts.py", content)
         self.assertIn("prompts/celebrity/research.md", content)
@@ -120,7 +119,6 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         self.assertIn("Files scanned >= 3", content)
         self.assertIn("Unique URLs >= 2", content)
         self.assertIn("Potential long quote lines = 0", content)
-        self.assertIn("实际打开过的具体页面", content)
         self.assertIn("actual inspected pages", content)
         self.assertIn("01_writings.md", content)
         self.assertIn("06_timeline.md", content)
@@ -200,10 +198,10 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         for logo_file in HOST_LOGO_FILES:
             self.assertTrue((ROOT / "docs" / "assets" / "hosts" / logo_file).is_file())
 
-    def test_repo_examples_live_under_skills_colleague(self) -> None:
-        self.assertTrue((ROOT / "skills" / "colleague" / "example_zhangsan").exists())
-        self.assertTrue((ROOT / "skills" / "colleague" / "example_tianyi").exists())
-        self.assertTrue((ROOT / "skills" / "colleague" / "example_jiaxiu").exists())
+    def test_repo_does_not_ship_generated_examples(self) -> None:
+        ignored = (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+        self.assertIn("/skills/", ignored)
+        self.assertIn("/docs/examples/", ignored)
         self.assertFalse((ROOT / "colleagues").exists())
 
     def test_multilingual_readmes_list_hosts_without_invocation_tutorials(self) -> None:
@@ -285,12 +283,19 @@ class SkillEntrypointDocsTest(unittest.TestCase):
 
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
         frontmatter = skill.split("---", 2)[1]
-        chinese_skill = skill.split("# English Version", 1)[0]
-        english_skill = skill.split("# English Version", 1)[1]
         self.assertIsNone(HAN_CHARACTER.search(frontmatter))
-        self.assertIsNone(HAN_CHARACTER.search(english_skill))
-        self.assertIn("本 Skill 支持中英文", chinese_skill)
-        self.assertIsNotNone(HAN_CHARACTER.search(chinese_skill))
+        self.assertIsNone(HAN_CHARACTER.search(skill), "Chinese copy remains in SKILL.md")
+        self.assertNotIn("# English Version", skill)
+        for prompt_path in sorted((ROOT / "prompts").rglob("*.md")):
+            self.assertIsNone(
+                HAN_CHARACTER.search(prompt_path.read_text(encoding="utf-8")),
+                f"Chinese copy remains in {prompt_path.relative_to(ROOT)}",
+            )
+        for reference_path in sorted((ROOT / "references").rglob("*.md")):
+            self.assertIsNone(
+                HAN_CHARACTER.search(reference_path.read_text(encoding="utf-8")),
+                f"Chinese copy remains in {reference_path.relative_to(ROOT)}",
+            )
 
         for name in ("README_JA.md", "ROADMAP_JA.md"):
             content = (ROOT / "docs" / "lang" / name).read_text(encoding="utf-8")

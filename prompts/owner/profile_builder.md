@@ -3,7 +3,9 @@
 Turn the intake answers and any provided material into one Markdown file with
 the structure below. Write in the owner's preferred language. Section headings
 may be translated except the summary heading, which must be exactly
-`## Always-on summary` (or `## 常驻摘要` in Chinese) so the installer can find it.
+`## Always-on summary` so the installer can find it, whatever language the rest
+of the profile uses. (The installer also accepts the legacy Chinese heading, but
+new profiles should use the English one.)
 
 Write about the owner in the third person or as directives to the agent
 ("Prefers...", "Ask before..."). Do not write it as a role-play persona.
