@@ -112,11 +112,11 @@ class SkillWriterTest(unittest.TestCase):
             )
             self.assertEqual(
                 manifest["install"]["installers"]["openclaw"],
-                "tools/install_openclaw_generated_skill.py",
+                "tools/install_generated_skill.py --host openclaw",
             )
             self.assertEqual(
                 manifest["install"]["installers"]["codex"],
-                "tools/install_codex_generated_skill.py",
+                "tools/install_generated_skill.py --host codex",
             )
             self.assertIn("name: colleague-zhangsan", combined_skill)
             self.assertIn("## PART A: Work", combined_skill)

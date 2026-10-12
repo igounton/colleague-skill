@@ -399,8 +399,8 @@ def build_manifest(meta: dict) -> dict:
             "min_schema_version": SCHEMA_VERSION,
             "installers": {
                 "claude-code": "tools/install_claude_generated_skill.py",
-                "openclaw": "tools/install_openclaw_generated_skill.py",
-                "codex": "tools/install_codex_generated_skill.py",
+                "openclaw": "tools/install_generated_skill.py --host openclaw",
+                "codex": "tools/install_generated_skill.py --host codex",
             },
             "slash_commands": {
                 "default": artifacts["combined_command"],

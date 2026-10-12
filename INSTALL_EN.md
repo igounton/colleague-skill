@@ -29,9 +29,9 @@ From an existing clone, these host-specific installers can copy Distilly into
 the canonical OpenClaw, Hermes, or Codex user directory:
 
 ```bash
-python3 tools/install_openclaw_skill.py --force
-python3 tools/install_hermes_skill.py --force
-python3 tools/install_codex_skill.py --force
+python3 tools/install_distilly.py --host openclaw --force
+python3 tools/install_distilly.py --host hermes --force
+python3 tools/install_distilly.py --host codex --force
 ```
 
 Use `--dry-run` first to inspect the destination without writing files.

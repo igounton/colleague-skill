@@ -163,10 +163,10 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         self.assertNotIn("https://github.com/titanwings/colleague-skill", install)
         self.assertIn("./skills/colleague", install)
         self.assertIn("install_claude_generated_skill.py", install)
-        self.assertIn("install_openclaw_generated_skill.py", install)
-        self.assertIn("install_codex_generated_skill.py", install)
-        self.assertIn("install_openclaw_skill.py", install)
-        self.assertIn("install_codex_skill.py", install)
+        self.assertIn("install_generated_skill.py --host openclaw", install)
+        self.assertIn("install_generated_skill.py --host codex", install)
+        self.assertIn("install_distilly.py --host openclaw", install)
+        self.assertIn("install_distilly.py --host codex", install)
         self.assertIn("tools/research/quality_check.py", install)
         self.assertIn("tools/research/xquik_public_posts.py", install)
         self.assertIn("tools/research/download_subtitles.sh", install)
@@ -233,7 +233,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
             )
 
     def test_non_chinese_docs_call_the_product_lark(self) -> None:
-        non_chinese = [ROOT / "README.md", ROOT / "docs" / "lang" / "README_EN.md"]
+        non_chinese = [ROOT / "README.md"]
         non_chinese.extend(
             ROOT / "docs" / "lang" / f"README_{language}.md"
             for language in ("DE", "ES", "JA", "KO", "PT", "RU")
@@ -253,7 +253,6 @@ class SkillEntrypointDocsTest(unittest.TestCase):
             ROOT / "CONTRIBUTING.md",
             ROOT / "CITATION.cff",
             ROOT / "INSTALL_EN.md",
-            ROOT / "docs" / "lang" / "README_EN.md",
             ROOT / "prompts" / "celebrity" / "research.md",
             ROOT / "prompts" / "celebrity" / "budget_unfriendly" / "research.md",
             ROOT / "references" / "celebrity_budget_unfriendly_framework.md",
@@ -305,7 +304,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
     def test_code_uses_new_names_with_explicit_legacy_fallbacks(self) -> None:
         writer = (ROOT / "tools" / "skill_writer.py").read_text(encoding="utf-8")
         schema = (ROOT / "tools" / "skill_schema.py").read_text(encoding="utf-8")
-        codex_installer = (ROOT / "tools" / "install_codex_skill.py").read_text(encoding="utf-8")
+        codex_installer = (ROOT / "tools" / "install_distilly.py").read_text(encoding="utf-8")
         generated_installer = (
             ROOT / "tools" / "install_generated_skill_common.py"
         ).read_text(encoding="utf-8")
@@ -314,7 +313,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         self.assertIn("DOT_SKILL_AUTO_INSTALL_CLAUDE", writer)
         self.assertIn('engine.setdefault("name", "distilly")', schema)
         self.assertIn('generation.setdefault("engine", "distilly")', schema)
-        self.assertIn('Path.home() / ".agents" / "skills" / "distilly"', codex_installer)
+        self.assertIn('"codex": (".agents", "skills", "distilly")', codex_installer)
         self.assertIn('.distilly-install.json', generated_installer)
 
         for collector_name in (

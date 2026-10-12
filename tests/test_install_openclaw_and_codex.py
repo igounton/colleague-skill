@@ -10,10 +10,8 @@ TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from install_codex_generated_skill import install_generated_skill as install_codex_generated_skill  # noqa: E402
-from install_codex_skill import install_skill as install_codex_skill  # noqa: E402
-from install_openclaw_generated_skill import install_generated_skill as install_openclaw_generated_skill  # noqa: E402
-from install_openclaw_skill import install_skill as install_openclaw_skill  # noqa: E402
+from install_distilly import install_skill  # noqa: E402
+from install_generated_skill_common import install_generated_skill  # noqa: E402
 import skill_writer  # noqa: E402
 
 
@@ -29,8 +27,8 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
             openclaw_dest = tmp_root / "openclaw" / "distilly"
             codex_dest = tmp_root / "agents" / "distilly"
 
-            installed_openclaw = install_openclaw_skill(source, openclaw_dest)
-            installed_codex = install_codex_skill(source, codex_dest)
+            installed_openclaw = install_skill(source, openclaw_dest)
+            installed_codex = install_skill(source, codex_dest)
 
             self.assertEqual(installed_openclaw, openclaw_dest)
             self.assertEqual(installed_codex, codex_dest)
@@ -44,8 +42,7 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
             skill_file = source / "SKILL.md"
             skill_file.write_text("name: distilly\n", encoding="utf-8")
 
-            self.assertEqual(install_openclaw_skill(source, source, force=True), source)
-            self.assertEqual(install_codex_skill(source, source, force=True), source)
+            self.assertEqual(install_skill(source, source, force=True), source)
             self.assertTrue(skill_file.exists())
 
     def test_repo_installers_reject_nested_or_ancestor_destinations(self) -> None:
@@ -57,11 +54,10 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
             skill_file.write_text("name: distilly\n", encoding="utf-8")
             nested = source / ".agents" / "skills" / "distilly"
 
-            for installer in (install_openclaw_skill, install_codex_skill):
-                with self.assertRaisesRegex(ValueError, "must not overlap"):
-                    installer(source, nested, force=True)
-                with self.assertRaisesRegex(ValueError, "must not overlap"):
-                    installer(source, source.parent, force=True)
+            with self.assertRaisesRegex(ValueError, "must not overlap"):
+                install_skill(source, nested, force=True)
+            with self.assertRaisesRegex(ValueError, "must not overlap"):
+                install_skill(source, source.parent, force=True)
 
             self.assertTrue(skill_file.exists())
             self.assertFalse(nested.exists())
@@ -83,10 +79,11 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
                 "Persona body",
             )
 
-            result = install_openclaw_generated_skill(
+            result = install_generated_skill(
                 skill_dir,
                 openclaw_skills,
                 force=True,
+                host="openclaw",
             )
 
             installed_file = openclaw_skills / "relationship-mireille" / "SKILL.md"
@@ -118,10 +115,11 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
                 "Persona body",
             )
 
-            result = install_codex_generated_skill(
+            result = install_generated_skill(
                 skill_dir,
                 codex_skills,
                 force=True,
+                host="codex",
             )
 
             installed_file = codex_skills / "celebrity-zhou-qimo" / "SKILL.md"

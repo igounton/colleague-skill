@@ -13,9 +13,9 @@
 | 宿主 | 一次性迁移到 |
 |------|--------------|
 | Claude Code | `~/.claude/skills/distilly` 或项目 `.claude/skills/distilly` |
-| OpenClaw | 从旧 clone 根目录运行 `python3 tools/install_openclaw_skill.py --force` |
-| Hermes | 从旧 clone 根目录运行 `python3 tools/install_hermes_skill.py --force` |
-| Codex | 从旧 clone 根目录运行 `python3 tools/install_codex_skill.py --force`，目标为 `~/.agents/skills/distilly` |
+| OpenClaw | 在旧 clone 里先 `git pull`，再从根目录运行 `python3 tools/install_distilly.py --host openclaw --force` |
+| Hermes | 在旧 clone 里先 `git pull`，再从根目录运行 `python3 tools/install_distilly.py --host hermes --force` |
+| Codex | 在旧 clone 里先 `git pull`，再从根目录运行 `python3 tools/install_distilly.py --host codex --force`，目标为 `~/.agents/skills/distilly` |
 | DeepSeek Harness | 重新 clone 到 `~/.dsh/skills/distilly`、`$DSH_HOME/skills/distilly` 或项目 `.dsh/skills/distilly` |
 | Pi coding agent | 重新 clone 到 `~/.pi/agent/skills/distilly` 或 `~/.agents/skills/distilly` |
 | Grok Build | 重新 clone 到 `~/.grok/skills/distilly` 或 `~/.agents/skills/distilly` |
@@ -72,8 +72,8 @@ git clone https://github.com/titanwings/distilly ~/.claude/skills/distilly
 
 ```bash
 python3 tools/install_claude_generated_skill.py --skill-dir skills/{character}/{slug} --force
-python3 tools/install_openclaw_generated_skill.py --skill-dir skills/{character}/{slug} --force
-python3 tools/install_codex_generated_skill.py --skill-dir skills/{character}/{slug} --force
+python3 tools/install_generated_skill.py --host openclaw --skill-dir skills/{character}/{slug} --force
+python3 tools/install_generated_skill.py --host codex --skill-dir skills/{character}/{slug} --force
 ```
 
 生成的 Skill 名称是 `{character}-{slug}`。在 Claude Code / Hermes / DeepSeek Harness / Grok Build 等 slash-name 宿主里，调用格式是：
@@ -122,7 +122,7 @@ python3 tools/install_generated_skill.py \
 ### B. OpenClaw
 
 ```bash
-python3 tools/install_openclaw_skill.py --force
+python3 tools/install_distilly.py --host openclaw --force
 ```
 
 或者继续使用 clone 方式：
@@ -140,7 +140,7 @@ git clone https://github.com/titanwings/distilly ~/.openclaw/workspace/skills/di
 推荐直接用仓库内的安装器，把当前 repo 同步到 Hermes 的本地 skill 目录：
 
 ```bash
-python3 tools/install_hermes_skill.py --force
+python3 tools/install_distilly.py --host hermes --force
 hermes skills list | rg distilly
 ```
 
@@ -155,7 +155,7 @@ hermes skills list | rg distilly
 如果只是预览安装目标，可以先跑：
 
 ```bash
-python3 tools/install_hermes_skill.py --dry-run
+python3 tools/install_distilly.py --host hermes --dry-run
 ```
 
 ---
@@ -165,7 +165,7 @@ python3 tools/install_hermes_skill.py --dry-run
 推荐直接用仓库内的安装器，把当前 repo 同步到 Codex 的本地 skill 目录：
 
 ```bash
-python3 tools/install_codex_skill.py --force
+python3 tools/install_distilly.py --host codex --force
 ```
 
 或者继续使用 clone 方式：
@@ -492,11 +492,11 @@ python3 tools/slack_auto_collector.py --help
 python3 tools/email_parser.py --help
 
 # 测试 Hermes 安装器
-python3 tools/install_hermes_skill.py --dry-run
+python3 tools/install_distilly.py --host hermes --dry-run
 
 # 测试 OpenClaw / Codex 安装器
-python3 tools/install_openclaw_skill.py --dry-run
-python3 tools/install_codex_skill.py --dry-run
+python3 tools/install_distilly.py --host openclaw --dry-run
+python3 tools/install_distilly.py --host codex --dry-run
 
 # 测试 celebrity research toolchain
 python3 tools/research/xquik_public_posts.py --help
@@ -519,14 +519,12 @@ distilly/               ← clone 到宿主的 skills/distilly/（例如 .claude
 ├── SKILL.md            # skill 入口（官方 frontmatter）
 ├── prompts/            # 分析和生成的 Prompt 模板
 ├── tools/              # Python 工具脚本
-│   ├── install_hermes_skill.py   # Hermes 本地安装器
-│   ├── install_openclaw_skill.py # OpenClaw 本地安装器
-│   ├── install_codex_skill.py    # Codex 本地安装器
-│   ├── install_openclaw_generated_skill.py # OpenClaw 角色 Skill 安装器
-│   ├── install_codex_generated_skill.py    # Codex 角色 Skill 安装器
+│   ├── install_distilly.py               # OpenClaw / Hermes / Codex 本地安装器（--host）
+│   ├── install_generated_skill.py        # 角色 Skill 安装器（--host）
+│   ├── install_claude_generated_skill.py # Claude Code 角色 Skill 安装器（含 Windows 命令 shim）
 │   └── research/
 │       └── xquik_public_posts.py           # 公开 X 帖子候选采集器
-├── docs/               # 文档（PRD 等）
+├── docs/               # 多语言文档和图片资源
 │
 └── skills/             # Distilly 生成的人物 Skill（.gitignore 排除）
     └── {character}/

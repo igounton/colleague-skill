@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the current Distilly repo into the local OpenClaw skill directory."""
+"""Install the current Distilly repo into a host's local skill directory."""
 
 from __future__ import annotations
 
@@ -10,9 +10,24 @@ from pathlib import Path
 
 IGNORE_NAMES = shutil.ignore_patterns(".git", "__pycache__", ".DS_Store", "*.pyc")
 
+HOST_DEFAULT_PARTS = {
+    "openclaw": (".openclaw", "workspace", "skills", "distilly"),
+    "hermes": (".hermes", "skills", "openclaw-imports", "distilly"),
+    "codex": (".agents", "skills", "distilly"),
+}
+
+
+def default_destination(host: str, home: Path | None = None) -> Path:
+    """Return the default Distilly install directory for a supported host."""
+    try:
+        parts = HOST_DEFAULT_PARTS[host]
+    except KeyError as error:
+        raise ValueError(f"unsupported host: {host}") from error
+    return (home or Path.home()).joinpath(*parts)
+
 
 def install_skill(source: Path, destination: Path, force: bool = False, dry_run: bool = False) -> Path:
-    """Copy the repo into the OpenClaw local skill directory."""
+    """Copy the repo into a host's local skill directory."""
     if not (source / "SKILL.md").exists():
         raise FileNotFoundError(f"source does not look like a skill repo: {source}")
 
@@ -37,24 +52,22 @@ def install_skill(source: Path, destination: Path, force: bool = False, dry_run:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Install Distilly into OpenClaw")
+    parser = argparse.ArgumentParser(description="Install Distilly into a host's local skill directory")
+    parser.add_argument("--host", required=True, choices=sorted(HOST_DEFAULT_PARTS))
     parser.add_argument(
         "--source",
         default=str(Path(__file__).resolve().parents[1]),
         help="Source skill repo root",
     )
-    parser.add_argument(
-        "--dest",
-        default=str(Path.home() / ".openclaw" / "workspace" / "skills" / "distilly"),
-        help="Destination OpenClaw skill directory",
-    )
+    parser.add_argument("--dest", help="Override the destination skill directory")
     parser.add_argument("--force", action="store_true", help="Overwrite the destination if needed")
     parser.add_argument("--dry-run", action="store_true", help="Print the install target without copying")
     args = parser.parse_args()
 
+    destination = Path(args.dest).expanduser() if args.dest else default_destination(args.host)
     destination = install_skill(
         Path(args.source).expanduser(),
-        Path(args.dest).expanduser(),
+        destination,
         force=args.force,
         dry_run=args.dry_run,
     )

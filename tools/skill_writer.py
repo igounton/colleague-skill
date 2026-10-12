@@ -516,27 +516,31 @@ def install_generated_hosts(
             output_lines.append(f"  Claude command shim: {install_result['command_path']}")
 
     if args.install_openclaw_skill:
-        from install_openclaw_generated_skill import install_generated_skill
+        from install_generated_skill import default_skills_dir
+        from install_generated_skill_common import install_generated_skill
 
         install_result = install_generated_skill(
             skill_dir,
             Path(args.openclaw_skills_dir).expanduser()
             if args.openclaw_skills_dir
-            else Path.home() / ".openclaw" / "workspace" / "skills",
+            else default_skills_dir("openclaw"),
             force=True,
+            host="openclaw",
         )
         output_lines.append(f"  OpenClaw skill: {install_result['skill_dir']}")
         output_lines.append(f"  OpenClaw trigger: /{install_result['command_name']}")
 
     if args.install_codex_skill:
-        from install_codex_generated_skill import install_generated_skill
+        from install_generated_skill import default_skills_dir
+        from install_generated_skill_common import install_generated_skill
 
         install_result = install_generated_skill(
             skill_dir,
             Path(args.codex_skills_dir).expanduser()
             if args.codex_skills_dir
-            else Path.home() / ".agents" / "skills",
+            else default_skills_dir("codex"),
             force=True,
+            host="codex",
         )
         output_lines.append(f"  Codex skill: {install_result['skill_dir']}")
         output_lines.append(f"  Codex skill name: {install_result['command_name']}")

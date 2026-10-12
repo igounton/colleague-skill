@@ -10,10 +10,24 @@ TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from install_hermes_skill import install_skill  # noqa: E402
+from install_distilly import default_destination, install_skill  # noqa: E402
 
 
-class HermesInstallTest(unittest.TestCase):
+class DistillyInstallTest(unittest.TestCase):
+    def test_default_destination_per_host(self) -> None:
+        home = Path("/home/tester")
+        self.assertEqual(
+            default_destination("openclaw", home),
+            home / ".openclaw" / "workspace" / "skills" / "distilly",
+        )
+        self.assertEqual(
+            default_destination("hermes", home),
+            home / ".hermes" / "skills" / "openclaw-imports" / "distilly",
+        )
+        self.assertEqual(default_destination("codex", home), home / ".agents" / "skills" / "distilly")
+        with self.assertRaisesRegex(ValueError, "unsupported host"):
+            default_destination("unknown", home)
+
     def test_install_skill_copies_repo_layout(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             source = Path(tmp_dir) / "source"
