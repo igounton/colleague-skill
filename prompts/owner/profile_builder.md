@@ -51,8 +51,9 @@ Rules:
    with `(inferred)` and list unknowns under `## Open questions`.
 4. Follow the privacy rules in `prompts/owner/intake.md`.
 5. Every fact in the profile has a row in `## Sources`. Use one of these source
-   labels: `interview`, `host memory`, `user file`, `calendar`, `mail`, `docs`,
-   `code`, `export: <name>`. Keep the summary bullets free of source tags; the
+   labels: `interview`, `host memory`, `user file`, or the discovered source
+   as `<category>: <name>` (for example `calendar: google-calendar`,
+   `social: x`, `mail: gmail`), or `export: <name>`. Keep the summary bullets free of source tags; the
    table carries them.
 6. When sources disagree, prefer what the owner said in the interview, then
    newer over older. List unresolved conflicts under `## Open questions`.

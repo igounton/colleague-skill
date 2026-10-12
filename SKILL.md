@@ -663,7 +663,7 @@ Persona 摘要：
 
 为 Agent 的主人本人建立画像，让 Agent 从第一次对话起就知道自己在为谁工作。它是 Agent 每次会话都读取的**背景资料**，不是角色扮演 Skill：不要生成 `{character}-{slug}` Skill，也不要写“你是 XX”。
 
-1. 按 `{distilly_skill_root}/prompts/owner/intake.md` 收集信息：先看宿主已经知道什么（宿主记忆、已有的用户文件、已连接的工具），再问缺失的部分；之后可选地读取已连接的日历、邮件、文档、代码或用户给的导出文件，每项读取前都先问用户，且只读不写。全程只用宿主自己的工具，不要求用户提供 API key 或配置 OAuth；飞书、钉钉、Slack 采集器不用于这个流程。
+1. 按 `{distilly_skill_root}/prompts/owner/intake.md` 收集信息：先**自动发现**这个 Agent 已有的信息来源（本会话能调用的工具、连接器和记忆，Agent 所在平台本身，例如 Grok 的 X 账号，以及 `tools/owner_sources.py discover` 在本机找到的用户文件、连接器配置和导出文件），不要按固定清单穷举；然后列出建议读取的来源，问用户用哪些、还要不要补充别的；只读取用户选中的部分，且只读不写；最后只问来源里还没回答的问题。全程只用宿主自己的工具，不要求用户提供 API key 或配置 OAuth；飞书、钉钉、Slack 采集器不用于这个流程。
 2. 按 `{distilly_skill_root}/prompts/owner/profile_builder.md` 生成画像，写到 `/tmp/distilly_owner_profile.md`，把全文给用户确认并按其修改。
 3. 用户确认后保存：
    ```bash
@@ -1436,7 +1436,7 @@ When reporting success, return the correct family-specific location instead of a
 
 Build a profile of the agent's owner so the agent knows who it works for from the first session. It is **context** the agent reads every session, not a role-play Skill: do not generate a `{character}-{slug}` Skill and never write "you are <user>".
 
-1. Gather information with `{distilly_skill_root}/prompts/owner/intake.md`: first check what the host already knows (host memory, existing user files, connected tools), then ask only about what is missing. Optionally read connected calendar, mail, documents, code, or exports the user provides; ask before each one and read only. Use only the host's own tools; never ask for API keys or OAuth setup on this path, and do not use the Lark, DingTalk or Slack collectors here.
+1. Gather information with `{distilly_skill_root}/prompts/owner/intake.md`: first **discover** the sources this agent already has (the tools, connectors and memory in this session, the platform the agent runs on such as Grok's X account, and the user files, connector configs and exports that `tools/owner_sources.py discover` finds on this machine) instead of walking a fixed list; propose which to read, ask the user which to use and whether to add anything else; read only what they pick, read-only; then ask only the questions the sources did not answer. Use only the host's own tools; never ask for API keys or OAuth setup on this path, and do not use the Lark, DingTalk or Slack collectors here.
 2. Build the profile with `{distilly_skill_root}/prompts/owner/profile_builder.md`, write it to `/tmp/distilly_owner_profile.md`, show the full text to the user and apply their corrections.
 3. After the user approves, save it:
    ```bash

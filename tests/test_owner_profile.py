@@ -211,7 +211,7 @@ class OwnerProfileTest(unittest.TestCase):
         intake = (REPO_ROOT / "prompts" / "owner" / "intake.md").read_text(encoding="utf-8")
         builder = (REPO_ROOT / "prompts" / "owner" / "profile_builder.md").read_text(encoding="utf-8")
         self.assertIn("Step 0", intake)
-        self.assertIn("Host memory", intake)
+        self.assertIn("memory or chat-history", intake)
         self.assertIn("never asks for API keys", intake)
         self.assertIn("## Sources", builder)
         # The Sources section must come after the summary so it is never linked.
