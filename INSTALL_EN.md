@@ -103,8 +103,11 @@ pip3 install -r requirements.txt
 # Browser runtime used by DingTalk and Lark browser collection
 playwright install chromium
 
+# Run these in your own terminal; secrets use hidden input and never go
+# through the agent conversation.
 # Lark-compatible collector
 python3 tools/feishu_auto_collector.py --setup
+python3 tools/feishu_auto_collector.py --login    # private chats: OAuth user token
 
 # DingTalk collector
 python3 tools/dingtalk_auto_collector.py --setup
@@ -117,6 +120,14 @@ The current Lark-compatible collector uses the China-region
 `open.feishu.cn` / `feishu.cn` endpoints. International `larksuite.com` tenant
 routing is not implemented yet. Never commit App secrets, OAuth tokens, or API
 keys to the repository.
+
+Collector credentials are read from environment variables first
+(`FEISHU_APP_ID`, `FEISHU_APP_SECRET`, `FEISHU_USER_ACCESS_TOKEN`,
+`DINGTALK_APP_KEY`, `DINGTALK_APP_SECRET`, `SLACK_BOT_TOKEN`), then from the OS
+keychain (optional `pip3 install keyring`), then from `~/.distilly/*_config.json`
+(mode 0600). Never paste these values into an agent chat. Each collector's
+`--check` reports where credentials come from without printing them, so an
+agent can run it safely.
 
 ## Celebrity research pipeline
 

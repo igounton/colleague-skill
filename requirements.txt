@@ -13,3 +13,6 @@ slack-sdk>=3.27.0
 # Optional: Word/Excel parsing (convert to PDF/CSV first if unavailable)
 python-docx>=1.1.0
 openpyxl>=3.1.0
+
+# Optional: store collector secrets in the OS keychain instead of ~/.distilly/*.json
+keyring>=24.0.0

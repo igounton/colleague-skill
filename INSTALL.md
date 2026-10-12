@@ -288,16 +288,21 @@ npm install -g feishu-mcp    # 需要 Node.js 16+
 | Slack 用户 | `slack_auto_collector.py` |
 | celebrity 公开 X 帖子研究 | `research/xquik_public_posts.py` |
 
+> **凭证不进 AI 上下文**：下面的 `--setup` / `--login` 请在你自己的终端运行，密钥用隐藏输入，不要粘贴到和 AI 代理的对话里。凭证读取优先级为「环境变量 > 系统钥匙串 > `~/.distilly/*_config.json`（0600）」；安装 `pip3 install keyring` 后 `--setup` 会提供存入系统钥匙串的选项。也可以直接设置环境变量 `FEISHU_APP_ID` / `FEISHU_APP_SECRET` / `FEISHU_USER_ACCESS_TOKEN`、`DINGTALK_APP_KEY` / `DINGTALK_APP_SECRET`、`SLACK_BOT_TOKEN`。各采集器的 `--check` 只显示凭证来源，不输出值，AI 代理可以放心运行。
+
 **飞书自动采集初始化**：
 ```bash
 python3 tools/feishu_auto_collector.py --setup
-# 输入飞书开放平台的 App ID 和 App Secret
+# 输入飞书开放平台的 App ID 和 App Secret（隐藏输入）
+python3 tools/feishu_auto_collector.py --login     # 私聊采集需要：OAuth 授权，获取 user_access_token
+python3 tools/feishu_auto_collector.py --refresh   # token 过期后刷新
+python3 tools/feishu_auto_collector.py --check     # 查看凭证状态
 ```
 
 **钉钉自动采集初始化**：
 ```bash
 python3 tools/dingtalk_auto_collector.py --setup
-# 输入钉钉开放平台的 AppKey 和 AppSecret
+# 输入钉钉开放平台的 AppKey 和 AppSecret（隐藏输入）
 # 首次运行加 --show-browser 参数以完成钉钉登录
 ```
 
@@ -317,7 +322,7 @@ python3 tools/feishu_browser.py \
 ```bash
 pip3 install slack-sdk
 python3 tools/slack_auto_collector.py --setup
-# 按提示输入 Bot User OAuth Token（xoxb-...）
+# 按提示输入 Bot User OAuth Token（xoxb-...，隐藏输入）
 ```
 
 > Slack 详细配置见下方「[Slack 自动采集配置](#slack-自动采集配置)」章节
@@ -426,7 +431,7 @@ Bot 只能读取**它已加入**的频道。在 Slack 中，进入每个目标�
 python3 tools/slack_auto_collector.py --setup
 ```
 
-按提示粘贴 Bot Token，脚本会自动验证并保存到 `~/.distilly/slack_config.json`。如果新路径不存在，采集器仍会只读兼容旧的 `~/.colleague-skill/slack_config.json`。
+在你自己的终端按提示粘贴 Bot Token（隐藏输入），脚本会自动验证并保存到系统钥匙串（安装了 `keyring` 时可选）或 `~/.distilly/slack_config.json`。也可以不运行向导，直接设置环境变量 `SLACK_BOT_TOKEN`。如果新路径不存在，采集器仍会只读兼容旧的 `~/.colleague-skill/slack_config.json`。
 
 配置成功后你会看到：
 ```

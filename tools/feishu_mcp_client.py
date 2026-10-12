@@ -19,7 +19,11 @@
 
 用法：
   # 配置 token（一次性）
-  python3 feishu_mcp_client.py --setup
+  python3 feishu_mcp_client.py --setup   # 在你自己的终端运行，密钥隐藏输入
+  python3 feishu_mcp_client.py --check   # 查看凭证是否已配置（不输出值）
+
+  凭证读取优先级：环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_USER_ACCESS_TOKEN
+    > 系统钥匙串（pip3 install keyring）> ~/.distilly/feishu_config.json
 
   # 读取文档
   python3 feishu_mcp_client.py --url "https://xxx.feishu.cn/wiki/xxx" --output out.txt
@@ -41,6 +45,9 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials  # noqa: E402
+
 
 CONFIG_PATH = Path.home() / ".distilly" / "feishu_config.json"
 LEGACY_CONFIG_PATH = Path.home() / ".colleague-skill" / "feishu_config.json"
@@ -60,35 +67,37 @@ def save_config(config: dict) -> None:
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_PATH.write_text(json.dumps(config, indent=2))
     CONFIG_PATH.chmod(0o600)
-    print(f"配置已保存到 {CONFIG_PATH}")
 
 
 def setup_config() -> None:
     print("=== 飞书 MCP 配置 ===")
     print("请前往飞书开放平台（open.feishu.cn）创建企业自建应用，获取以下信息：\n")
 
-    app_id = input("App ID (cli_xxx): ").strip()
-    app_secret = input("App Secret: ").strip()
+    raw = load_config()
+    app_id = credentials.ask("App ID (cli_xxx)")
+    app_secret = credentials.ask_secret("App Secret")
 
     print("\n配置方式选择：")
     print("  [1] App Token（应用权限，需要在飞书后台开通对应权限）")
     print("  [2] User Token（个人权限，能访问你本人有权限的所有内容，需要定期刷新）")
     mode = input("选择 [1/2]，默认 1：").strip() or "1"
 
-    config = {
+    values = {
         "app_id": app_id,
         "app_secret": app_secret,
         "mode": "app" if mode == "1" else "user",
     }
 
     if mode == "2":
-        print("\n获取 User Token：飞书开放平台 → OAuth 2.0 → 获取 user_access_token")
-        user_token = input("User Access Token (u-xxx)：").strip()
-        config["user_token"] = user_token
-        print("注意：User Token 有效期约 2 小时，过期后需要重新配置")
+        print("\n获取 User Token：推荐运行 python3 feishu_auto_collector.py --login 完成授权")
+        user_token = credentials.ask_secret("User Access Token (u-xxx，留空则使用 --login 保存的 token)")
+        if user_token:
+            values["user_token"] = user_token
+        print("注意：User Token 有效期约 2 小时，可用 feishu_auto_collector.py --refresh 刷新")
 
-    save_config(config)
-    print("\n✅ 配置完成！")
+    credentials.choose_store(raw)
+    credentials.save_secrets("feishu_mcp", raw, values, save_config)
+    print(f"\n✅ 配置完成（非密钥字段写入 {CONFIG_PATH}）")
 
 
 # ─── MCP 调用封装 ─────────────────────────────────────────────────────────────
@@ -102,8 +111,10 @@ def call_mcp(tool: str, params: dict, config: dict) -> dict:
     env["FEISHU_APP_ID"] = config.get("app_id", "")
     env["FEISHU_APP_SECRET"] = config.get("app_secret", "")
 
-    if config.get("mode") == "user" and config.get("user_token"):
-        env["FEISHU_USER_ACCESS_TOKEN"] = config["user_token"]
+    # user_token 是本脚本 --setup 存的字段；user_access_token 是 feishu_auto_collector.py --login 存的字段
+    user_token = config.get("user_token") or config.get("user_access_token")
+    if config.get("mode") == "user" and user_token:
+        env["FEISHU_USER_ACCESS_TOKEN"] = user_token
 
     payload = json.dumps({
         "jsonrpc": "2.0",
@@ -258,7 +269,8 @@ def list_wiki_docs(space_id: str, config: dict) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="飞书 MCP 客户端")
-    parser.add_argument("--setup", action="store_true", help="初始化配置（App ID / Secret）")
+    parser.add_argument("--setup", action="store_true", help="初始化配置（App ID / Secret，在你自己的终端运行）")
+    parser.add_argument("--check", action="store_true", help="检查凭证是否已配置（只显示来源，不输出值）")
     parser.add_argument("--url", help="飞书文档/Wiki/表格链接")
     parser.add_argument("--chat-id", help="群聊 ID（oc_xxx 格式）")
     parser.add_argument("--target", help="目标人物姓名")
@@ -270,13 +282,18 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.setup:
+        credentials.ensure_interactive("feishu_mcp")
         setup_config()
         return
 
-    config = load_config()
-    if not config:
-        print("错误：尚未配置，请先运行：python3 feishu_mcp_client.py --setup", file=sys.stderr)
-        sys.exit(1)
+    raw = load_config()
+    if args.check:
+        print("飞书 MCP 凭证状态：")
+        print(credentials.describe("feishu_mcp", raw))
+        return
+
+    config = credentials.resolve("feishu_mcp", raw)
+    credentials.require("feishu_mcp", config, ["app_id", "app_secret"], "python3 feishu_mcp_client.py --setup")
 
     content = ""
 

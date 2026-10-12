@@ -11,16 +11,19 @@
   6. 拉取多维表格（如有）
   7. 输出统一格式，直接进入 Distilly 分析流程
 
-前置：
-  python3 feishu_auto_collector.py --setup   # 配置 App ID / Secret（一次性）
+前置（在你自己的终端运行，不要让 AI 代理代为输入密钥）：
+  python3 feishu_auto_collector.py --setup   # 配置 App ID / Secret（一次性，隐藏输入）
+  python3 feishu_auto_collector.py --check   # 查看凭证是否已配置（不输出值）
+
+凭证读取优先级：环境变量 > 系统钥匙串（pip3 install keyring）> ~/.distilly/feishu_config.json
+  FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_USER_ACCESS_TOKEN / FEISHU_REFRESH_TOKEN
 
 私聊采集（需额外步骤）：
   1. 飞书应用开通用户权限：im:message, im:chat
-  2. 获取 OAuth 授权码：
-     浏览器打开: https://open.feishu.cn/open-apis/authen/v1/authorize?app_id={APP_ID}&redirect_uri=http://www.example.com&scope=im:message%20im:chat
-     授权后从地址栏复制 code
-  3. 换取 token：
-     python3 feishu_auto_collector.py --exchange-code {CODE}
+  2. 在你自己的终端运行 OAuth 登录（打印授权链接，隐藏输入回调地址里的 code）：
+     python3 feishu_auto_collector.py --login
+  3. token 过期后刷新（使用已保存的 refresh_token，不需要任何输入）：
+     python3 feishu_auto_collector.py --refresh
   4. 采集时指定私聊 chat_id：
      python3 feishu_auto_collector.py --name "张三" --p2p-chat-id oc_xxx
 
@@ -35,13 +38,15 @@
   # 直接指定 open_id + 私聊（跳过用户搜索）
   python3 feishu_auto_collector.py --open-id ou_xxx --p2p-chat-id oc_xxx --name "张三"
 
-  # 换取 user_access_token
-  python3 feishu_auto_collector.py --exchange-code {CODE}
+  # 获取 / 刷新 user_access_token
+  python3 feishu_auto_collector.py --login
+  python3 feishu_auto_collector.py --refresh
 """
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
 import argparse
@@ -55,6 +60,9 @@ except ImportError:
     print("错误：请先安装 requests：pip3 install requests", file=sys.stderr)
     sys.exit(1)
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials  # noqa: E402
+
 
 CONFIG_PATH = Path.home() / ".distilly" / "feishu_config.json"
 LEGACY_CONFIG_PATH = Path.home() / ".colleague-skill" / "feishu_config.json"
@@ -64,10 +72,10 @@ BASE_URL = "https://open.feishu.cn/open-apis"
 # ─── 配置 ────────────────────────────────────────────────────────────────────
 
 def load_config() -> dict:
+    """读取配置文件原始内容；文件不存在时返回空 dict（凭证可能全部来自环境变量或钥匙串）"""
     config_path = CONFIG_PATH if CONFIG_PATH.exists() else LEGACY_CONFIG_PATH
     if not config_path.exists():
-        print("未找到配置，请先运行：python3 feishu_auto_collector.py --setup", file=sys.stderr)
-        sys.exit(1)
+        return {}
     return json.loads(config_path.read_text())
 
 
@@ -106,24 +114,22 @@ def setup_config() -> None:
     print("  私聊消息必须通过 user_access_token 获取（应用身份无权访问私聊）。")
     print("  获取方式：OAuth 授权，授权链接格式：")
     print("    https://open.feishu.cn/open-apis/authen/v1/authorize?app_id={APP_ID}&redirect_uri={REDIRECT}&scope=im:message%20im:chat")
-    print("  授权后从回调 URL 中取 code，用 --exchange-code 换取 token。")
+    print("  配置完 App ID / Secret 后，在本终端运行 --login 完成授权。")
     print()
 
-    app_id = input("App ID (cli_xxx): ").strip()
-    app_secret = input("App Secret: ").strip()
+    raw = load_config()
+    app_id = credentials.ask("App ID (cli_xxx)")
+    app_secret = credentials.ask_secret("App Secret")
+    values = {"app_id": app_id, "app_secret": app_secret}
 
-    config = {"app_id": app_id, "app_secret": app_secret}
-
-    print("\n是否配置 user_access_token？（用于私聊消息采集，可跳过）")
-    user_token = input("user_access_token (留空跳过): ").strip()
-    if user_token:
-        config["user_access_token"] = user_token
-    p2p_chat_id = input("私聊 chat_id (留空跳过): ").strip()
+    p2p_chat_id = credentials.ask("私聊 chat_id（留空跳过，可稍后用 --p2p-chat-id 指定）")
     if p2p_chat_id:
-        config["p2p_chat_id"] = p2p_chat_id
+        values["p2p_chat_id"] = p2p_chat_id
 
-    save_config(config)
-    print(f"\n✅ 配置已保存到 {CONFIG_PATH}")
+    credentials.choose_store(raw)
+    credentials.save_secrets("feishu", raw, values, save_config)
+    print(f"\n✅ 配置已保存（非密钥字段写入 {CONFIG_PATH}）")
+    print("   私聊采集还需要用户授权：python3 feishu_auto_collector.py --login")
 
 
 # ─── Token ───────────────────────────────────────────────────────────────────
@@ -181,6 +187,88 @@ def api_post(path: str, body: dict, config: dict, use_user_token: bool = False) 
     return resp.json()
 
 
+OAUTH_REDIRECT_URI = "http://www.example.com"
+OAUTH_SCOPE = "im:message im:chat"
+
+
+def build_authorize_url(app_id: str) -> str:
+    from urllib.parse import urlencode
+
+    query = urlencode({"app_id": app_id, "redirect_uri": OAUTH_REDIRECT_URI, "scope": OAUTH_SCOPE})
+    return f"{BASE_URL}/authen/v1/authorize?{query}"
+
+
+def extract_oauth_code(value: str) -> str:
+    """接受完整回调 URL 或单独的 code"""
+    from urllib.parse import parse_qs, urlparse
+
+    value = value.strip()
+    if "code=" in value:
+        query = urlparse(value).query or value.split("?", 1)[-1]
+        codes = parse_qs(query).get("code")
+        if codes:
+            return codes[0]
+    return value
+
+
+def save_user_token(raw: dict, token_data: dict) -> None:
+    credentials.save_secrets(
+        "feishu",
+        raw,
+        {
+            "user_access_token": token_data["access_token"],
+            "refresh_token": token_data.get("refresh_token", ""),
+        },
+        save_config,
+    )
+
+
+def login(raw: dict, config: dict) -> None:
+    """在用户自己的终端里完成 OAuth：授权码隐藏输入，token 直接写入钥匙串/配置文件"""
+    credentials.ensure_interactive("feishu")
+    credentials.require("feishu", config, ["app_id", "app_secret"], "python3 feishu_auto_collector.py --setup")
+    print("1. 确认飞书应用「安全设置 → 重定向 URL」已添加：" + OAUTH_REDIRECT_URI)
+    print("2. 在浏览器打开下面的链接并授权：\n")
+    print("   " + build_authorize_url(config["app_id"]) + "\n")
+    print("3. 授权后浏览器会跳到 example.com，把地址栏里的完整 URL 粘贴到这里")
+    code = extract_oauth_code(credentials.ask_secret("回调 URL 或 code"))
+    if not code:
+        print("❌ 未输入 code", file=sys.stderr)
+        sys.exit(1)
+    token_data = exchange_code_for_token(code, config)
+    if not token_data:
+        print("❌ 换取失败，请检查 code 是否有效（code 只能使用一次，5 分钟内有效）", file=sys.stderr)
+        sys.exit(1)
+    if not raw.get(credentials.SECRET_STORE_KEY):
+        credentials.choose_store(raw)
+    save_user_token(raw, token_data)
+    print(f"✅ user_access_token 已保存（scope: {token_data.get('scope', '')}）")
+
+
+def refresh_user_token(raw: dict, config: dict) -> bool:
+    """用已保存的 refresh_token 刷新 user_access_token，全程不输出 token"""
+    refresh_token = config.get("refresh_token")
+    if not refresh_token:
+        print("未找到 refresh_token，请在你自己的终端运行：python3 feishu_auto_collector.py --login", file=sys.stderr)
+        return False
+    app_token = get_tenant_token(config)
+    resp = requests.post(
+        f"{BASE_URL}/authen/v1/oidc/refresh_access_token",
+        headers={"Authorization": f"Bearer {app_token}"},
+        json={"grant_type": "refresh_token", "refresh_token": refresh_token},
+        timeout=10,
+    )
+    data = resp.json()
+    if data.get("code") != 0:
+        print(f"刷新 token 失败：code={data.get('code')} msg={data.get('msg')}", file=sys.stderr)
+        return False
+    token_data = data.get("data", {})
+    save_user_token(raw, token_data)
+    config["user_access_token"] = token_data["access_token"]
+    config["refresh_token"] = token_data.get("refresh_token", "")
+    return True
+
+
 def exchange_code_for_token(code: str, config: dict) -> dict:
     """用 OAuth 授权码换取 user_access_token"""
     app_token = get_tenant_token(config)
@@ -192,7 +280,7 @@ def exchange_code_for_token(code: str, config: dict) -> dict:
     )
     data = resp.json()
     if data.get("code") != 0:
-        print(f"换取 token 失败：{data}", file=sys.stderr)
+        print(f"换取 token 失败：code={data.get('code')} msg={data.get('msg')}", file=sys.stderr)
         return {}
     return data.get("data", {})
 
@@ -619,7 +707,7 @@ def collect_messages(
         tips += "  - 私聊采集：未配置 user_access_token 或 p2p_chat_id\n"
         tips += "\n私聊采集配置方法：\n"
         tips += "  1. 在飞书开放平台开通 im:message 和 im:chat 用户权限\n"
-        tips += "  2. 通过 OAuth 授权获取 user_access_token（--exchange-code）\n"
+        tips += "  2. 在你自己的终端运行 --login 完成 OAuth 授权（不要把 token 粘贴到对话里）\n"
         tips += "  3. 配置 p2p_chat_id（私聊会话 ID）\n"
         return tips
 
@@ -896,38 +984,52 @@ def main() -> None:
     parser.add_argument("--output-dir", default=None, help="输出目录（默认 ./knowledge/{name}）")
     parser.add_argument("--msg-limit", type=int, default=1000, help="最多采集消息条数（默认 1000）")
     parser.add_argument("--doc-limit", type=int, default=20, help="最多采集文档篇数（默认 20）")
-    parser.add_argument("--exchange-code", metavar="CODE", help="用 OAuth 授权码换取 user_access_token 并保存到配置")
-    parser.add_argument("--user-token", metavar="TOKEN", help="直接指定 user_access_token（覆盖配置文件）")
+    parser.add_argument("--check", action="store_true", help="检查凭证是否已配置（只显示来源，不输出值）")
+    parser.add_argument("--login", action="store_true", help="在终端完成 OAuth 授权，获取 user_access_token")
+    parser.add_argument("--refresh", action="store_true", help="用已保存的 refresh_token 刷新 user_access_token")
+    # 已移除：授权码 / token 作为命令参数会进入 shell history 和 AI 代理的上下文
+    parser.add_argument("--exchange-code", metavar="CODE", help=argparse.SUPPRESS)
+    parser.add_argument("--user-token", metavar="TOKEN", help=argparse.SUPPRESS)
     parser.add_argument("--p2p-chat-id", metavar="CHAT_ID", help="私聊会话 ID（覆盖配置文件）")
     parser.add_argument("--open-id", metavar="OPEN_ID", help="直接指定目标用户的 open_id（跳过用户搜索）")
 
     args = parser.parse_args()
 
+    if args.exchange_code or args.user_token:
+        parser.error(
+            "--exchange-code / --user-token 已移除：凭证不应出现在命令参数里。\n"
+            "  请在你自己的终端运行 --login，或设置环境变量 FEISHU_USER_ACCESS_TOKEN。"
+        )
+
     if args.setup:
+        credentials.ensure_interactive("feishu")
         setup_config()
         return
 
-    config = load_config()
+    raw = load_config()
+    config = credentials.resolve("feishu", raw)
 
-    # 换取 user_access_token
-    if args.exchange_code:
-        token_data = exchange_code_for_token(args.exchange_code, config)
-        if token_data:
-            config["user_access_token"] = token_data["access_token"]
-            config["refresh_token"] = token_data.get("refresh_token", "")
-            save_config(config)
-            print(f"✅ user_access_token 已保存（scope: {token_data.get('scope', '')}）")
-            print(f"   token: {token_data['access_token'][:20]}...")
-        else:
-            print("❌ 换取失败，请检查 code 是否有效")
+    if args.check:
+        print("飞书凭证状态：")
+        print(credentials.describe("feishu", raw))
         return
+
+    if args.login:
+        login(raw, config)
+        return
+
+    credentials.require("feishu", config, ["app_id", "app_secret"], "python3 feishu_auto_collector.py --setup")
+
+    if args.refresh:
+        if refresh_user_token(raw, config):
+            print("✅ user_access_token 已刷新")
+            return
+        sys.exit(1)
 
     if not args.name and not args.open_id:
         parser.error("请提供 --name 或 --open-id")
 
     # 命令行参数覆盖配置
-    if args.user_token:
-        config["user_access_token"] = args.user_token
     if args.p2p_chat_id:
         config["p2p_chat_id"] = args.p2p_chat_id
 

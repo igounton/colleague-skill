@@ -16,7 +16,11 @@
 前置：
   pip3 install requests playwright
   playwright install chromium
-  python3 dingtalk_auto_collector.py --setup
+  python3 dingtalk_auto_collector.py --setup   # 在你自己的终端运行，隐藏输入 AppSecret
+  python3 dingtalk_auto_collector.py --check   # 查看凭证是否已配置（不输出值）
+
+凭证读取优先级：环境变量 DINGTALK_APP_KEY / DINGTALK_APP_SECRET
+  > 系统钥匙串（pip3 install keyring）> ~/.distilly/dingtalk_config.json
 
 用法：
   python3 dingtalk_auto_collector.py --name "张三" --output-dir ./knowledge/zhangsan
@@ -41,6 +45,9 @@ except ImportError:
     print("错误：请先安装依赖：pip3 install requests", file=sys.stderr)
     sys.exit(1)
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials  # noqa: E402
+
 
 CONFIG_PATH = Path.home() / ".distilly" / "dingtalk_config.json"
 LEGACY_CONFIG_PATH = Path.home() / ".colleague-skill" / "dingtalk_config.json"
@@ -50,10 +57,10 @@ API_BASE = "https://api.dingtalk.com"
 # ─── 配置 ────────────────────────────────────────────────────────────────────
 
 def load_config() -> dict:
+    """读取配置文件原始内容；文件不存在时返回空 dict（凭证可能全部来自环境变量或钥匙串）"""
     config_path = CONFIG_PATH if CONFIG_PATH.exists() else LEGACY_CONFIG_PATH
     if not config_path.exists():
-        print("未找到配置，请先运行：python3 dingtalk_auto_collector.py --setup", file=sys.stderr)
-        sys.exit(1)
+        return {}
     return json.loads(config_path.read_text(encoding="utf-8"))
 
 
@@ -81,12 +88,13 @@ def setup_config() -> None:
     print("    Bitable.Record.READ         读取记录")
     print()
 
-    app_key = input("AppKey (ding_xxx): ").strip()
-    app_secret = input("AppSecret: ").strip()
+    raw = load_config()
+    app_key = credentials.ask("AppKey (ding_xxx)")
+    app_secret = credentials.ask_secret("AppSecret")
 
-    config = {"app_key": app_key, "app_secret": app_secret}
-    save_config(config)
-    print(f"\n✅ 配置已保存到 {CONFIG_PATH}")
+    credentials.choose_store(raw)
+    credentials.save_secrets("dingtalk", raw, {"app_key": app_key, "app_secret": app_secret}, save_config)
+    print(f"\n✅ 配置已保存（非密钥字段写入 {CONFIG_PATH}）")
     print("\n注意：消息记录采集需要 Playwright，请确认已安装：")
     print("  pip3 install playwright && playwright install chromium")
 
@@ -110,7 +118,7 @@ def get_access_token(config: dict) -> str:
     data = resp.json()
 
     if "accessToken" not in data:
-        print(f"获取 token 失败：{data}", file=sys.stderr)
+        print(f"获取 token 失败：code={data.get('code')} message={data.get('message')}", file=sys.stderr)
         sys.exit(1)
 
     token = data["accessToken"]
@@ -753,7 +761,8 @@ def collect_all(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="钉钉数据自动采集器")
-    parser.add_argument("--setup", action="store_true", help="初始化配置")
+    parser.add_argument("--setup", action="store_true", help="初始化配置（在你自己的终端运行）")
+    parser.add_argument("--check", action="store_true", help="检查凭证是否已配置（只显示来源，不输出值）")
     parser.add_argument("--name", help="同事姓名")
     parser.add_argument("--output-dir", default=None, help="输出目录")
     parser.add_argument("--msg-limit", type=int, default=500, help="最多采集消息条数（默认 500）")
@@ -765,13 +774,21 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.setup:
+        credentials.ensure_interactive("dingtalk")
         setup_config()
+        return
+
+    raw = load_config()
+    if args.check:
+        print("钉钉凭证状态：")
+        print(credentials.describe("dingtalk", raw))
         return
 
     if not args.name:
         parser.error("请提供 --name")
 
-    config = load_config()
+    config = credentials.resolve("dingtalk", raw)
+    credentials.require("dingtalk", config, ["app_key", "app_secret"], "python3 dingtalk_auto_collector.py --setup")
     output_dir = Path(args.output_dir) if args.output_dir else Path(f"./knowledge/{args.name}")
 
     collect_all(

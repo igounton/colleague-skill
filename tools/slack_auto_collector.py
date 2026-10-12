@@ -8,7 +8,11 @@ Slack 自动采集器
   3. 输出统一格式，直接进入 Distilly 分析流程
 
 前置：
-  python3 slack_auto_collector.py --setup   # 配置 Bot Token（一次性）
+  python3 slack_auto_collector.py --setup   # 配置 Bot Token（一次性，在你自己的终端运行，隐藏输入）
+  python3 slack_auto_collector.py --check   # 查看凭证是否已配置（不输出值）
+
+凭证读取优先级：环境变量 SLACK_BOT_TOKEN > 系统钥匙串（pip3 install keyring）
+  > ~/.distilly/slack_config.json
 
 用法：
   python3 slack_auto_collector.py --name "张三" --output-dir ./knowledge/zhangsan
@@ -39,6 +43,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import credentials  # noqa: E402
 
 # ─── 依赖检查 ──────────────────────────────────────────────────────────────────
 
@@ -87,13 +94,10 @@ class SlackAuthError(SlackCollectorError):
 # ─── 配置管理 ──────────────────────────────────────────────────────────────────
 
 def load_config() -> dict:
+    """读取配置文件原始内容；文件不存在时返回空 dict（凭证可能全部来自环境变量或钥匙串）"""
     config_path = CONFIG_PATH if CONFIG_PATH.exists() else LEGACY_CONFIG_PATH
     if not config_path.exists():
-        print(
-            "未找到配置，请先运行：python3 slack_auto_collector.py --setup",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        return {}
     try:
         return json.loads(config_path.read_text())
     except json.JSONDecodeError:
@@ -131,7 +135,7 @@ def setup_config() -> None:
     print("步骤 3：Install to Workspace → 复制 Bot User OAuth Token（xoxb-...）")
     print("步骤 4：将 Bot 加入目标频道（/invite @your-bot-name）\n")
 
-    token = input("Bot User OAuth Token (xoxb-...): ").strip()
+    token = credentials.ask_secret("Bot User OAuth Token (xoxb-...)")
     if not token.startswith("xoxb-"):
         print("警告：Token 格式不对，应以 xoxb- 开头", file=sys.stderr)
 
@@ -150,9 +154,10 @@ def setup_config() -> None:
             print("  Token 无效，请重新生成", file=sys.stderr)
         sys.exit(1)
 
-    config = {"bot_token": token}
-    save_config(config)
-    print(f"\n✅ 配置已保存到 {CONFIG_PATH}")
+    raw = load_config()
+    credentials.choose_store(raw)
+    credentials.save_secrets("slack", raw, {"bot_token": token}, save_config)
+    print(f"\n✅ 配置已保存（{CONFIG_PATH}）")
     print("   请确认已将 Bot 加入目标频道，否则无法读取消息")
 
 
@@ -665,7 +670,8 @@ def main() -> None:
   python3 slack_auto_collector.py --name "john.doe" --output-dir ./knowledge/john --msg-limit 500
         """,
     )
-    parser.add_argument("--setup", action="store_true", help="初始化配置（Bot Token）")
+    parser.add_argument("--setup", action="store_true", help="初始化配置（Bot Token，在你自己的终端运行）")
+    parser.add_argument("--check", action="store_true", help="检查凭证是否已配置（只显示来源，不输出值）")
     parser.add_argument("--name", help="同事姓名或 Slack 用户名")
     parser.add_argument(
         "--output-dir",
@@ -688,14 +694,22 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.setup:
+        credentials.ensure_interactive("slack")
         setup_config()
+        return
+
+    raw = load_config()
+    if args.check:
+        print("Slack 凭证状态：")
+        print(credentials.describe("slack", raw))
         return
 
     if not args.name:
         parser.print_help()
         parser.error("请提供 --name 参数")
 
-    config = load_config()
+    config = credentials.resolve("slack", raw)
+    credentials.require("slack", config, ["bot_token"], "python3 slack_auto_collector.py --setup")
     output_dir = (
         Path(args.output_dir)
         if args.output_dir

@@ -83,6 +83,13 @@ Grok Bot 可以把流程保存为 private Skill，但目前没有官方的本地
 
 如需改为全局路径，用 `--base-dir` 指向对应 character family 的根目录。
 
+**凭证规则（飞书 / 钉钉 / Slack）**：App Secret、AppSecret、user_access_token、refresh_token、Bot Token、OAuth code 都不能进入对话上下文。
+- **不要**让用户把这些值发给你，也不要把它们写进命令参数、脚本源码、输出文件或回复里。
+- 需要配置时，请用户**在他们自己的终端**运行对应脚本的 `--setup`（飞书私聊还要 `--login`），密钥隐藏输入，写入系统钥匙串（安装了 `keyring` 时）或 `~/.distilly/*_config.json`（权限 0600）；也可以让用户自己 export 环境变量（`FEISHU_APP_ID` / `FEISHU_APP_SECRET` / `FEISHU_USER_ACCESS_TOKEN` / `DINGTALK_APP_KEY` / `DINGTALK_APP_SECRET` / `SLACK_BOT_TOKEN`）。`--setup` / `--login` 在非交互环境下会拒绝运行，你不能代为执行。
+- 你只用 `--check` 确认凭证是否就绪，它只显示来源（环境变量 / 钥匙串 / 配置文件），不输出值。
+- 如果你需要自己写脚本调 API，从环境变量或 `tools/credentials.py` 的 `credentials.resolve(...)` 读取凭证，不要打印。
+- 如果用户还是把密钥粘贴进了对话：不要复述、不要使用，提醒他们到开放平台重置该密钥，再按上面的方式重新配置。
+
 ---
 
 ## 主流程：创建新 Skill
@@ -155,7 +162,11 @@ Grok Bot 可以把流程保存为 private Skill，但目前没有官方的本地
 
 #### 方式 A：飞书自动采集（推荐）
 
-首次使用需配置：
+首次使用需配置。先检查凭证是否已就绪：
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --check
+```
+如未配置，请用户**在他们自己的终端**运行下面的命令（不要你代为运行，也不要让用户把 App Secret 发给你）：
 ```bash
 python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --setup
 ```
@@ -173,53 +184,34 @@ python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
 
 私聊消息只能通过用户身份（user_access_token）获取，应用身份无权访问私聊。
 
-**前置条件**：
-
-用户需要提供以下信息：
-1. **飞书应用凭证**：`app_id` 和 `app_secret`（在飞书开放平台创建自建应用获取）
+**前置条件**（由用户在飞书开放平台和自己的终端里完成，你只负责指引）：
+1. **飞书应用凭证**：已通过 `--setup` 或环境变量配置好 `app_id` / `app_secret`（用 `--check` 确认）
 2. **用户权限**：应用需开通以下用户权限（scope）：
    - `im:message` — 以用户身份读取/发送消息
    - `im:chat` — 以用户身份读取会话列表
-3. **OAuth 授权码（code）**：用户在浏览器中完成 OAuth 授权后，从回调 URL 中获取
+3. **重定向 URL**：在飞书应用「安全设置 → 重定向 URL」中添加 `http://www.example.com`
 
-如果用户缺少以上任何信息，引导他们完成配置。不要假设用户已经配好了。
+如果用户缺少以上任何一项，引导他们完成配置。不要假设用户已经配好了。
 
-**获取 user_access_token 的完整流程**：
+**获取 user_access_token**：请用户在**自己的终端**运行：
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --login
+```
+脚本会打印授权链接；用户在浏览器授权后，把回调地址粘贴到终端（隐藏输入），token 直接写入钥匙串或配置文件。不要让用户把 code 或 token 发到对话里。
 
-当用户提供了 app_id、app_secret，并确认已开通用户权限后：
-
-1. 帮用户生成 OAuth 授权链接：
-   ```
-   https://open.feishu.cn/open-apis/authen/v1/authorize?app_id={APP_ID}&redirect_uri=http://www.example.com&scope=im:message%20im:chat
-   ```
-   > ⚠️ 注意：`redirect_uri` 需要在飞书应用的「安全设置 → 重定向 URL」中添加 `http://www.example.com`
-   
-2. 用户在浏览器打开链接，登录并授权
-3. 页面会跳转到 `http://www.example.com?code=xxx`，用户复制 code 给你
-4. 用 code 换取 token：
-   ```bash
-   python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --exchange-code {CODE}
-   ```
-   或者你自己写 Python 脚本调飞书 API 换取：
-   ```python
-   # 1. 获取 app_access_token
-   POST https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal
-   Body: {"app_id": "xxx", "app_secret": "xxx"}
-   
-   # 2. 用 code 换 user_access_token
-   POST https://open.feishu.cn/open-apis/authen/v1/oidc/access_token
-   Header: Authorization: Bearer {app_access_token}
-   Body: {"grant_type": "authorization_code", "code": "xxx"}
-   ```
+token 过期后（有效期约 2 小时）你可以直接刷新，不涉及任何密钥输入：
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --refresh
+```
 
 **获取私聊 chat_id**：
 
-用户通常不知道 chat_id。当用户有了 user_access_token 但没有 chat_id 时，你应该**自己写 Python 脚本**来获取：
+用户通常不知道 chat_id。可以让用户在飞书里打开与对方的私聊，从会话链接或开发者工具里找到 `oc_` 开头的 chat_id；如需你写脚本获取，脚本必须从 `credentials.resolve("feishu", ...)` 或环境变量读取 token，且不打印 token：
 
-- **方法**：用 user_access_token 向对方的 open_id 发一条消息，返回值中会包含 chat_id
+- **方法**：用 user_access_token 向对方的 open_id 发一条消息，返回值中会包含 chat_id（会真的发出消息，先征得用户同意）
   ```python
   POST https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id
-  Header: Authorization: Bearer {user_access_token}
+  Header: Authorization: Bearer <从 credentials.resolve 读取，不要写死>
   Body: {"receive_id": "{对方open_id}", "msg_type": "text", "content": "{\"text\":\"你好\"}"}
   # 返回值中的 chat_id 就是私聊会话 ID
   ```
@@ -232,19 +224,18 @@ python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
 
 **执行采集**：
 
-拿到 user_access_token 和 chat_id 后：
+凭证就绪、拿到 chat_id 后（token 由脚本自行读取，不出现在命令里）：
 ```bash
 python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
   --open-id {对方open_id} \
   --p2p-chat-id {chat_id} \
-  --user-token {user_access_token} \
   --name "{name}" \
   --output-dir ./knowledge/{slug} \
   --msg-limit 1000
 ```
 
-**灵活性原则**：以上 API 调用不一定要用 collector 脚本，如果脚本跑不通或者场景不匹配，你可以直接写 Python 脚本调飞书 API 完成任务。核心 API 参考：
-- 获取 token：`POST /auth/v3/app_access_token/internal`、`POST /authen/v1/oidc/access_token`
+**灵活性原则**：以上 API 调用不一定要用 collector 脚本，如果脚本跑不通或者场景不匹配，你可以直接写 Python 脚本调飞书 API 完成任务，但凭证必须通过 `credentials.resolve("feishu", feishu_auto_collector.load_config())` 或环境变量读取，不能出现在脚本源码、命令参数或输出里。核心 API 参考：
+- 获取 token：`POST /auth/v3/tenant_access_token/internal`（collector 里的 `get_tenant_token` 已封装）
 - 发消息（获取 chat_id）：`POST /im/v1/messages?receive_id_type=open_id`
 - 拉消息：`GET /im/v1/messages?container_id_type=chat&container_id={chat_id}`
 - 查通讯录：`GET /contact/v3/scopes`、`GET /contact/v3/users/{user_id}`
@@ -262,7 +253,7 @@ python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
 
 如果采集失败，根据报错自行判断原因并尝试修复，常见问题：
 - 群聊采集：bot 未添加到群聊
-- 私聊采集：user_access_token 过期（有效期 2 小时，可用 refresh_token 刷新）
+- 私聊采集：user_access_token 过期（有效期 2 小时，运行 `--refresh` 刷新；没有 refresh_token 时请用户在自己的终端重新 `--login`）
 - 权限不足：引导用户在飞书开放平台开通对应权限并重新授权
 - 或改用方式 B/C
 
@@ -270,9 +261,10 @@ python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
 
 #### 方式 B：钉钉自动采集
 
-首次使用需配置：
+首次使用需配置。先用 `--check` 检查；如未配置，请用户**在他们自己的终端**运行 `--setup`（AppSecret 隐藏输入），或自行设置 `DINGTALK_APP_KEY` / `DINGTALK_APP_SECRET` 环境变量。不要让用户把 AppSecret 发给你：
 ```bash
-python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --setup
+python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --check
+python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --setup   # 用户自己运行
 ```
 
 然后输入姓名，一键采集：
@@ -350,9 +342,10 @@ python3 "{distilly_skill_root}/tools/feishu_browser.py" \
 
 **选 2（MCP 方案）**：
 
-首次使用需初始化配置：
+首次使用需初始化配置（与方式 A 共用飞书凭证）。先用 `--check` 检查；如未配置，请用户**在他们自己的终端**运行 `--setup`：
 ```bash
-python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --setup
+python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --check
+python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --setup   # 用户自己运行
 ```
 
 之后直接读取：
@@ -834,6 +827,13 @@ This Skill runs in any compatible host that can read local files and execute Bas
 
 For a global path, use `--base-dir` with the storage root for that character family.
 
+**Credential rules (Lark / DingTalk / Slack)**: App Secrets, user_access_token, refresh_token, Bot Tokens and OAuth codes must never enter the conversation context.
+- **Never** ask the user to send you these values, and never put them in command arguments, script source, output files or replies.
+- For setup, ask the user to run the script's `--setup` **in their own terminal** (plus `--login` for Lark private chats). Secrets are typed with hidden input and stored in the OS keychain (when `keyring` is installed) or in `~/.distilly/*_config.json` (mode 0600). The user may instead export environment variables (`FEISHU_APP_ID` / `FEISHU_APP_SECRET` / `FEISHU_USER_ACCESS_TOKEN` / `DINGTALK_APP_KEY` / `DINGTALK_APP_SECRET` / `SLACK_BOT_TOKEN`). `--setup` / `--login` refuse to run without an interactive terminal, so you cannot run them on the user's behalf.
+- Use `--check` to see whether credentials are ready; it shows only the source (env / keychain / config file), never the values.
+- If you write your own script against the APIs, load credentials from environment variables or `credentials.resolve(...)` in `tools/credentials.py`, and never print them.
+- If the user pastes a secret into the chat anyway: do not repeat or use it, tell them to rotate it on the open platform, then reconfigure as above.
+
 The Lark-labelled compatibility collectors currently connect to the China-region `open.feishu.cn` / `feishu.cn` endpoints. International `larksuite.com` tenant routing is not implemented yet.
 
 ---
@@ -908,7 +908,11 @@ Can mix and match, or skip entirely (generate from manual info only).
 
 #### Option A: Lark Auto-Collect (Recommended)
 
-First-time setup:
+First-time setup. Check whether credentials are ready:
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --check
+```
+If not, ask the user to run this **in their own terminal** (do not run it yourself, and do not ask for the App Secret in chat):
 ```bash
 python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --setup
 ```
@@ -926,53 +930,34 @@ python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
 
 Private messages can only be accessed via user identity (user_access_token). App identity cannot access private chats.
 
-**Prerequisites**:
-
-The user needs to provide:
-1. **Lark app credentials**: `app_id` and `app_secret` (from the Open Platform)
+**Prerequisites** (the user completes these on the Open Platform and in their own terminal; you only guide):
+1. **Lark app credentials**: `app_id` / `app_secret` configured via `--setup` or environment variables (confirm with `--check`)
 2. **User scopes**: The app must have these user scopes enabled:
    - `im:message` — read/send messages as user
    - `im:chat` — read chat list as user
-3. **OAuth authorization code**: obtained after user completes OAuth in browser
+3. **Redirect URL**: add `http://www.example.com` under the app's "Security Settings → Redirect URLs"
 
 If the user is missing any of these, guide them through setup. Don't assume anything is pre-configured.
 
-**Getting user_access_token**:
+**Getting user_access_token**: ask the user to run this **in their own terminal**:
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --login
+```
+The script prints the authorization URL; after authorizing in the browser, the user pastes the callback URL into the terminal (hidden input) and the token goes straight into the keychain or config file. Never ask the user to send the code or token in chat.
 
-Once the user provides app_id, app_secret, and confirms scopes are enabled:
-
-1. Generate the OAuth URL for them:
-   ```
-   https://open.feishu.cn/open-apis/authen/v1/authorize?app_id={APP_ID}&redirect_uri=http://www.example.com&scope=im:message%20im:chat
-   ```
-   > ⚠️ The redirect_uri must be added in the app's "Security Settings → Redirect URLs"
-
-2. User opens URL, logs in, authorizes
-3. Page redirects to `http://www.example.com?code=xxx`, user copies the code
-4. Exchange code for token:
-   ```bash
-   python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --exchange-code {CODE}
-   ```
-   Or write a Python script to call the same API directly:
-   ```python
-   # 1. Get app_access_token
-   POST https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal
-   Body: {"app_id": "xxx", "app_secret": "xxx"}
-   
-   # 2. Exchange code for user_access_token
-   POST https://open.feishu.cn/open-apis/authen/v1/oidc/access_token
-   Header: Authorization: Bearer {app_access_token}
-   Body: {"grant_type": "authorization_code", "code": "xxx"}
-   ```
+When the token expires (about 2 hours), you can refresh it yourself with no secret input:
+```bash
+python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" --refresh
+```
 
 **Getting the p2p chat_id**:
 
-Users typically don't know their chat_id. When the user has a user_access_token but no chat_id, **write a Python script yourself** to obtain it:
+Users typically don't know their chat_id. The user can open the private chat in Lark and find the `oc_` chat_id in the chat link or developer tools. If you write a script to obtain it, the script must read the token from `credentials.resolve("feishu", ...)` or environment variables and must not print it:
 
-- **Method**: Send a message to the other user's open_id — the response includes the chat_id
+- **Method**: Send a message to the other user's open_id — the response includes the chat_id (this really sends a message, so ask the user first)
   ```python
   POST https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=open_id
-  Header: Authorization: Bearer {user_access_token}
+  Header: Authorization: Bearer <read via credentials.resolve, never hard-coded>
   Body: {"receive_id": "{target_open_id}", "msg_type": "text", "content": "{\"text\":\"hello\"}"}
   # The chat_id in the response is the p2p chat ID
   ```
@@ -985,19 +970,18 @@ Users typically don't know their chat_id. When the user has a user_access_token 
 
 **Running collection**:
 
-Once you have user_access_token and chat_id:
+Once credentials are ready and you have the chat_id (the script loads the token itself; it never appears on the command line):
 ```bash
 python3 "{distilly_skill_root}/tools/feishu_auto_collector.py" \
   --open-id {target_open_id} \
   --p2p-chat-id {chat_id} \
-  --user-token {user_access_token} \
   --name "{name}" \
   --output-dir ./knowledge/{slug} \
   --msg-limit 1000
 ```
 
-**Flexibility principle**: The above API calls don't have to go through the collector script. If the script doesn't work or doesn't fit the scenario, write Python scripts directly against the same endpoints. Key API reference:
-- Get token: `POST /auth/v3/app_access_token/internal`, `POST /authen/v1/oidc/access_token`
+**Flexibility principle**: The above API calls don't have to go through the collector script. If the script doesn't work or doesn't fit the scenario, write Python scripts directly against the same endpoints, but load credentials through `credentials.resolve("feishu", feishu_auto_collector.load_config())` or environment variables; they must never appear in script source, command arguments or output. Key API reference:
+- Get token: `POST /auth/v3/tenant_access_token/internal` (wrapped by `get_tenant_token` in the collector)
 - Send message (get chat_id): `POST /im/v1/messages?receive_id_type=open_id`
 - Fetch messages: `GET /im/v1/messages?container_id_type=chat&container_id={chat_id}`
 - Search contacts: `GET /contact/v3/scopes`, `GET /contact/v3/users/{user_id}`
@@ -1015,7 +999,7 @@ After collection, `Read` the output files:
 
 If collection fails, diagnose the error and attempt to fix it. Common issues:
 - Group chat: bot not added to the group
-- Private chat: user_access_token expired (2-hour TTL, refresh with refresh_token)
+- Private chat: user_access_token expired (2-hour TTL; run `--refresh`, or ask the user to re-run `--login` in their own terminal if there is no refresh_token)
 - Insufficient permissions: guide user to enable scopes and re-authorize
 - Or switch to Option B/C
 
@@ -1023,9 +1007,10 @@ If collection fails, diagnose the error and attempt to fix it. Common issues:
 
 #### Option B: DingTalk Auto-Collect
 
-First-time setup:
+First-time setup. Run `--check` first; if not configured, ask the user to run `--setup` **in their own terminal** (hidden AppSecret input), or to export `DINGTALK_APP_KEY` / `DINGTALK_APP_SECRET`. Never ask for the AppSecret in chat:
 ```bash
-python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --setup
+python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --check
+python3 "{distilly_skill_root}/tools/dingtalk_auto_collector.py" --setup   # run by the user
 ```
 
 Then enter the name:
@@ -1103,9 +1088,10 @@ First use will open a browser window for login (one-time).
 
 **Option 2 (MCP)**:
 
-First-time setup:
+First-time setup (shares Lark credentials with Option A). Run `--check` first; if not configured, ask the user to run `--setup` **in their own terminal**:
 ```bash
-python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --setup
+python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --check
+python3 "{distilly_skill_root}/tools/feishu_mcp_client.py" --setup   # run by the user
 ```
 
 Then read directly:
