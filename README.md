@@ -134,6 +134,22 @@ Each generated Person Profile is packaged as an Agent Skill and can be installed
 
 ---
 
+## 🤖 Personal Agents
+
+Distilly also targets the personal agents people now live with. Each one keeps its own memory and connected accounts, so a Person Profile is meant to carry over into them instead of starting from zero.
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://x.ai"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/hosts/grok-build-mark-dark.png"><img src="docs/assets/hosts/grok-build-mark-light.png" alt="Grok Bot" height="46"></picture></a><br><b>Grok Bot</b><br><sub>saved Skill · preview</sub></td>
+<td align="center" width="20%"><a href="https://www.meta.ai"><img src="docs/assets/hosts/meta-mark.svg" alt="Meta Muse" height="40"></a><br><b>Meta Muse</b><br><sub>profile handoff · planned</sub></td>
+<td align="center" width="20%"><a href="https://openai.com"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/hosts/openai-mark-dark.svg"><img src="docs/assets/hosts/openai-mark-light.svg" alt="OpenAI Dots" height="40"></picture></a><br><b>OpenAI Dots</b><br><sub>profile handoff · planned</sub></td>
+<td align="center" width="20%"><a href="https://github.com/openclaw/openclaw"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/hosts/openclaw-wordmark-dark.svg"><img src="docs/assets/hosts/openclaw-wordmark-light.svg" alt="OpenClaw" height="38"></picture></a><br><sub>native Skill</sub></td>
+<td align="center" width="20%"><a href="https://github.com/NousResearch/hermes-agent"><img src="docs/assets/hosts/hermes-agent-wordmark.png" alt="Hermes Agent" height="32"></a><br><sub>native Skill</sub></td>
+</tr>
+</table>
+
+---
+
 ## 📦 Supported Data Sources
 
 | Logo | Source | Messages | Docs / Wiki | Notes |

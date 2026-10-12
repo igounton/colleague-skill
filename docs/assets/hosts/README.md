@@ -12,7 +12,9 @@ official SVG's inherited `currentColor` to white for dark-mode rendering.
 | Codex | Resized from the Codex product icons bundled with the official ChatGPT desktop app; see [OpenAI's Codex documentation](https://learn.chatgpt.com/docs/codex) |
 | DeepSeek Harness | [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness/blob/master/website/public/wordmark.svg) |
 | Pi coding agent | [Pi press kit](https://pi.dev/press-kit) |
-| Grok Build | [xai-org/grok-build](https://github.com/xai-org/grok-build) |
+| Grok Build / Grok Bot | [xai-org/grok-build](https://github.com/xai-org/grok-build) |
+| Meta (Meta Muse) | [Simple Icons](https://simpleicons.org/?q=meta) `meta.svg` (CC0), filled with Meta blue |
+| OpenAI (OpenAI Dots) | [Simple Icons](https://simpleicons.org/?q=openai) `openai.svg` (CC0), black for light mode and white for dark mode |
 | OpenCode | [anomalyco/opencode](https://github.com/anomalyco/opencode/tree/dev/packages/console/app/src/asset) |
 
 All product names, logos, and trademarks belong to their respective owners.
