@@ -358,7 +358,7 @@ def collect_docs(user: dict, doc_limit: int, config: dict) -> str:
         content = fetch_doc_content(doc_id, space_id, config)
 
         if not content or len(content.strip()) < 20:
-            print(f"    内容为空，跳过", file=sys.stderr)
+            print("    内容为空，跳过", file=sys.stderr)
             continue
 
         lines += [
@@ -520,7 +520,6 @@ def collect_messages_browser(
             "请运行：pip3 install playwright && playwright install chromium\n"
         )
 
-    import re
 
     profile = chrome_profile or get_default_chrome_profile()
     print(f"  启动浏览器抓取钉钉消息（{'无头' if headless else '有界面'}）...", file=sys.stderr)
@@ -715,7 +714,7 @@ def collect_all(
         print(f"  ⚠️  文档采集失败：{e}", file=sys.stderr)
 
     # Step 3: 多维表格
-    print(f"\n📊 采集多维表格 ...", file=sys.stderr)
+    print("\n📊 采集多维表格 ...", file=sys.stderr)
     try:
         bitable_content = collect_bitables(user, config)
         bt_path = output_dir / "bitables.txt"
@@ -728,7 +727,7 @@ def collect_all(
     # Step 4: 消息记录（浏览器方案）
     if not skip_messages:
         print(f"\n📨 采集消息记录（浏览器方案，上限 {msg_limit} 条）...", file=sys.stderr)
-        print(f"  ℹ️  钉钉 API 不支持历史消息拉取，自动切换浏览器方案", file=sys.stderr)
+        print("  ℹ️  钉钉 API 不支持历史消息拉取，自动切换浏览器方案", file=sys.stderr)
         try:
             msg_content = collect_messages_browser(name, msg_limit, chrome_profile, headless)
             msg_path = output_dir / "messages.txt"
@@ -738,7 +737,7 @@ def collect_all(
         except Exception as e:
             print(f"  ⚠️  消息采集失败：{e}", file=sys.stderr)
     else:
-        print(f"\n📨 跳过消息采集（--skip-messages）", file=sys.stderr)
+        print("\n📨 跳过消息采集（--skip-messages）", file=sys.stderr)
 
     # 写摘要
     summary = {

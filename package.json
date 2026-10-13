@@ -12,6 +12,7 @@
     "prompts/",
     "tools/",
     "requirements.txt",
+    "requirements-optional.txt",
     "INSTALL.md",
     "INSTALL_EN.md",
     "LICENSE",

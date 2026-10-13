@@ -22,10 +22,10 @@ Thank you for considering a contribution! Distilly turns source material about a
 ```bash
 git clone https://github.com/titanwings/distilly.git distilly
 cd distilly
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt -r requirements-optional.txt
 ```
 
-Python 3.9+ is required. Optional extras (`openpyxl`, auto-collector credentials) are covered in [INSTALL.md](INSTALL.md).
+Python 3.9+ is required. `requirements.txt` holds the core dependency; collector extras (`playwright`, `slack-sdk`, `openpyxl`, `keyring`, ...) are in `requirements-optional.txt`. See [INSTALL.md](INSTALL.md).
 
 ---
 
@@ -66,7 +66,7 @@ Keep the subject under 72 characters. Use the body for the *why*, not the *what*
 ## Code style
 
 - Match surrounding code — we don't enforce a formatter yet, but consistency matters
-- Python: prefer standard library where possible; add to `requirements.txt` only if necessary
+- Python: prefer standard library where possible; add to `requirements.txt` only if every tool needs it, otherwise to `requirements-optional.txt`
 - Tools under `tools/` should be runnable as standalone CLIs (`if __name__ == "__main__":`)
 - Prompts under `prompts/` are plain Markdown — keep them concise and task-specific
 

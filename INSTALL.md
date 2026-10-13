@@ -266,8 +266,11 @@ Grok Bot 支持把书面流程或演示保存为 private Skill，然后在 Setti
 新配置统一写入 `~/.distilly/`。为了不破坏既有安装，当新配置不存在时，飞书、钉钉和 Slack 采集器仍会只读回退到 `~/.colleague-skill/`；之后再运行 `--setup` 会写入新目录。
 
 ```bash
-# 安装 requirements.txt 中声明的 Python 依赖（Python 3.9+）
+# 安装核心 Python 依赖（Python 3.9+）
 pip3 install -r requirements.txt
+
+# 按需安装采集器的可选依赖（Playwright、Slack、keyring 等），或全部安装
+pip3 install -r requirements-optional.txt
 
 # 飞书浏览器方案（内部文档/需要登录权限的文档）
 playwright install chromium  # 仅需安装 chromium，不需要完整 Chrome

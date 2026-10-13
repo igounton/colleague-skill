@@ -159,7 +159,7 @@ def transcribe_with_openai_api(audio_path: Path, language: Optional[str]) -> str
             file=sys.stderr,
         )
 
-    print(f"[transcribe] using OpenAI Whisper API", file=sys.stderr)
+    print("[transcribe] using OpenAI Whisper API", file=sys.stderr)
     client = OpenAI(api_key=api_key)
 
     with open(audio_path, "rb") as f:
@@ -256,7 +256,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    cleanup_audio = False
     audio_path: Path
 
     with tempfile.TemporaryDirectory(prefix="transcribe_") as tmpdir_str:
@@ -264,7 +263,6 @@ def main() -> None:
 
         if args.url:
             audio_path = download_audio(args.url, tmpdir)
-            cleanup_audio = not args.keep_audio
         else:
             input_path = Path(args.input).expanduser()
             if not input_path.exists():

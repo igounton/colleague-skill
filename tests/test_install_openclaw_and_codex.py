@@ -3,16 +3,11 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-import sys
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from install_distilly import install_skill  # noqa: E402
-from install_generated_skill_common import install_generated_skill  # noqa: E402
-import skill_writer  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+from install_distilly import install_skill
+from install_generated_skill_common import install_generated_skill
+import skill_writer
 
 
 class OpenClawAndCodexInstallTest(unittest.TestCase):
@@ -22,7 +17,7 @@ class OpenClawAndCodexInstallTest(unittest.TestCase):
             source = tmp_root / "source"
             source.mkdir()
             (source / "SKILL.md").write_text("name: distilly\n", encoding="utf-8")
-            (source / "README.md").write_text("# Distilly\n", encoding="utf-8")
+            (source / "package.json").write_text('{"files": ["SKILL.md"]}', encoding="utf-8")
 
             openclaw_dest = tmp_root / "openclaw" / "distilly"
             codex_dest = tmp_root / "agents" / "distilly"

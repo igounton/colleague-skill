@@ -491,6 +491,8 @@ def install_generated_hosts(
 
     if install_claude_skill:
         from install_claude_generated_skill import (
+            default_claude_commands_dir,
+            default_claude_skills_dir,
             install_generated_skill,
             should_install_command_shim,
         )
@@ -499,11 +501,11 @@ def install_generated_hosts(
             skill_dir,
             Path(args.claude_skills_dir).expanduser()
             if args.claude_skills_dir
-            else Path.home() / ".claude" / "skills",
+            else default_claude_skills_dir(),
             commands_dir=(
                 Path(args.claude_commands_dir).expanduser()
                 if args.claude_commands_dir
-                else Path.home() / ".claude" / "commands"
+                else default_claude_commands_dir()
             ),
             force=True,
             install_command_shim=(
@@ -516,14 +518,14 @@ def install_generated_hosts(
             output_lines.append(f"  Claude command shim: {install_result['command_path']}")
 
     if args.install_openclaw_skill:
-        from install_generated_skill import default_skills_dir
+        from hosts import generated_skills_dir
         from install_generated_skill_common import install_generated_skill
 
         install_result = install_generated_skill(
             skill_dir,
             Path(args.openclaw_skills_dir).expanduser()
             if args.openclaw_skills_dir
-            else default_skills_dir("openclaw"),
+            else generated_skills_dir("openclaw"),
             force=True,
             host="openclaw",
         )
@@ -531,14 +533,14 @@ def install_generated_hosts(
         output_lines.append(f"  OpenClaw trigger: /{install_result['command_name']}")
 
     if args.install_codex_skill:
-        from install_generated_skill import default_skills_dir
+        from hosts import generated_skills_dir
         from install_generated_skill_common import install_generated_skill
 
         install_result = install_generated_skill(
             skill_dir,
             Path(args.codex_skills_dir).expanduser()
             if args.codex_skills_dir
-            else default_skills_dir("codex"),
+            else generated_skills_dir("codex"),
             force=True,
             host="codex",
         )

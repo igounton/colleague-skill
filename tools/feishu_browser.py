@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import sys
 import time
-import json
 import argparse
 import platform
 from pathlib import Path
@@ -209,7 +208,7 @@ def fetch_messages(page, chat_name: str, target_name: str, limit: int = 500) -> 
         input()
 
     # 向上滚动加载历史消息
-    print(f"正在加载消息历史...", file=sys.stderr)
+    print("正在加载消息历史...", file=sys.stderr)
     messages_container = page.query_selector('.message-list, .im-message-list, [data-testid="message-list"]')
 
     if messages_container:
@@ -277,7 +276,7 @@ def fetch_messages(page, chat_name: str, target_name: str, limit: int = 500) -> 
     short_msgs = [m for m in messages if len(m.get("content", "")) <= 50]
 
     lines = [
-        f"# 飞书消息记录（浏览器抓取）",
+        "# 飞书消息记录（浏览器抓取）",
         f"群聊：{chat_name}",
         f"目标人物：{target_name}",
         f"共 {len(messages)} 条消息",

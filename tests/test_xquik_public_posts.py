@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from research.xquik_public_posts import (  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+from research.xquik_public_posts import (
     API_CONTRACT,
     API_URL,
     MAX_CONTENT_CHARS,

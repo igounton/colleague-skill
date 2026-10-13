@@ -2,20 +2,15 @@ from __future__ import annotations
 
 import json
 import stat
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-import dingtalk_auto_collector  # noqa: E402
-import feishu_auto_collector  # noqa: E402
-import feishu_mcp_client  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+import dingtalk_auto_collector
+import feishu_auto_collector
+import feishu_mcp_client
 
 
 COLLECTOR_MODULES = (

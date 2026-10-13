@@ -257,7 +257,7 @@ def classify_emails(emails: list[dict]) -> dict:
 def format_output(target: str, classified: dict) -> str:
     """格式化输出，供 AI 分析使用"""
     lines = [
-        f"# 邮件提取结果",
+        "# 邮件提取结果",
         f"目标人物：{target}",
         f"总邮件数：{classified['total_count']}",
         "",

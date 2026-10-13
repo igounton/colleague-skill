@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Tiny stdio MCP server with fixture data, for an end-to-end test of Distilly's owner discovery."""
-import json, sys, datetime, os
+import json
+import sys
+import datetime
+import os
 
 KIND = sys.argv[1]
 LOG = os.environ.get("MOCK_MCP_LOG", "/tmp/mock_mcp_calls.log")
@@ -64,7 +67,8 @@ FIXTURES = {
 spec = FIXTURES[KIND]
 
 def send(msg):
-    sys.stdout.write(json.dumps(msg) + "\n"); sys.stdout.flush()
+    sys.stdout.write(json.dumps(msg) + "\n")
+    sys.stdout.flush()
 
 for line in sys.stdin:
     line = line.strip()

@@ -4,16 +4,11 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
-import sys
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from install_generated_skill import default_skills_dir  # noqa: E402
-from install_generated_skill_common import install_generated_skill  # noqa: E402
-import skill_writer  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+from install_generated_skill import default_skills_dir
+from install_generated_skill_common import install_generated_skill
+import skill_writer
 
 
 class GeneratedSkillInstallTest(unittest.TestCase):

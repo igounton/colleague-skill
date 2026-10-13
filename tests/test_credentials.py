@@ -10,13 +10,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-import credentials  # noqa: E402
-import feishu_auto_collector  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+import credentials
+import feishu_auto_collector
 
 
 class FakeKeyring:

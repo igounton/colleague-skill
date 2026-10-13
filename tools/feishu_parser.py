@@ -16,7 +16,6 @@ import re
 import sys
 import argparse
 from pathlib import Path
-from datetime import datetime
 
 
 def parse_feishu_json(file_path: str, target_name: str) -> list[dict]:
@@ -171,7 +170,7 @@ def extract_key_content(messages: list[dict]) -> dict:
 def format_output(target_name: str, extracted: dict) -> str:
     """格式化输出，供 AI 分析使用"""
     lines = [
-        f"# 飞书消息提取结果",
+        "# 飞书消息提取结果",
         f"目标人物：{target_name}",
         f"总消息数：{extracted['total_count']}",
         "",

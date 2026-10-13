@@ -319,7 +319,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
     def test_code_uses_new_names_with_explicit_legacy_fallbacks(self) -> None:
         writer = (ROOT / "tools" / "skill_writer.py").read_text(encoding="utf-8")
         schema = (ROOT / "tools" / "skill_schema.py").read_text(encoding="utf-8")
-        codex_installer = (ROOT / "tools" / "install_distilly.py").read_text(encoding="utf-8")
+        host_table = (ROOT / "tools" / "hosts.json").read_text(encoding="utf-8")
         generated_installer = (
             ROOT / "tools" / "install_generated_skill_common.py"
         ).read_text(encoding="utf-8")
@@ -328,7 +328,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         self.assertIn("DOT_SKILL_AUTO_INSTALL_CLAUDE", writer)
         self.assertIn('engine.setdefault("name", "distilly")', schema)
         self.assertIn('generation.setdefault("engine", "distilly")', schema)
-        self.assertIn('"codex": (".agents", "skills", "distilly")', codex_installer)
+        self.assertIn('"codex": { "skills_dir": [".agents", "skills"] }', host_table)
         self.assertIn('.distilly-install.json', generated_installer)
 
         for collector_name in (

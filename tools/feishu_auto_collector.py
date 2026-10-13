@@ -342,7 +342,7 @@ def _find_user_by_department(name: str, config: dict) -> Optional[dict]:
         if data.get("code") != 0:
             if parent_id == "0":
                 print(f"  部门遍历失败（code={data.get('code')}）：{data.get('msg')}", file=sys.stderr)
-                print(f"  请确认已开通 contact:department.base:readonly 权限", file=sys.stderr)
+                print("  请确认已开通 contact:department.base:readonly 权限", file=sys.stderr)
                 return None
             continue
 
@@ -446,10 +446,10 @@ def find_user(name: str, config: dict) -> Optional[dict]:
 
     # 都失败
     print(f"\n  ❌ 未能找到用户 {name}", file=sys.stderr)
-    print(f"  建议：", file=sys.stderr)
-    print(f"    1. 确认已开通 contact:department.base:readonly 权限", file=sys.stderr)
-    print(f"    2. 改用邮箱搜索：--name user@company.com", file=sys.stderr)
-    print(f"    3. 改用手机号搜索：--name +8613800138000", file=sys.stderr)
+    print("  建议：", file=sys.stderr)
+    print("    1. 确认已开通 contact:department.base:readonly 权限", file=sys.stderr)
+    print("    2. 改用邮箱搜索：--name user@company.com", file=sys.stderr)
+    print("    3. 改用手机号搜索：--name +8613800138000", file=sys.stderr)
     return None
 
 
@@ -679,8 +679,8 @@ def collect_messages(
         chat_sources.append(f"私聊（{len(p2p_msgs)} 条）")
         print(f"    获取 {len(p2p_msgs)} 条私聊消息", file=sys.stderr)
     elif user_token and not p2p_chat_id:
-        print(f"  ⚠️  有 user_access_token 但未配置 p2p_chat_id，跳过私聊采集", file=sys.stderr)
-        print(f"     请在配置中添加 p2p_chat_id（通过发送消息 API 返回值获取）", file=sys.stderr)
+        print("  ⚠️  有 user_access_token 但未配置 p2p_chat_id，跳过私聊采集", file=sys.stderr)
+        print("     请在配置中添加 p2p_chat_id（通过发送消息 API 返回值获取）", file=sys.stderr)
 
     # ── 群聊采集（使用 tenant_access_token）──
     remaining = msg_limit - len(all_messages)
@@ -720,7 +720,7 @@ def collect_messages(
     short_msgs = [m for m in target_msgs if len(m.get("content", "")) <= 50]
 
     lines = [
-        f"# 飞书消息记录（自动采集）",
+        "# 飞书消息记录（自动采集）",
         f"目标：{name}",
         f"来源：{', '.join(chat_sources)}",
         f"共 {len(all_messages)} 条消息（目标用户 {len(target_msgs)} 条，对话方 {len(other_msgs)} 条）",
@@ -772,7 +772,7 @@ def search_docs_by_user(user_open_id: str, name: str, doc_limit: int, config: di
 
     if data.get("code") != 0:
         # fallback：用关键词搜索
-        print(f"  按创建人搜索失败，改用关键词搜索 ...", file=sys.stderr)
+        print("  按创建人搜索失败，改用关键词搜索 ...", file=sys.stderr)
         data = api_post(
             "/search/v2/message",
             {
@@ -806,7 +806,7 @@ def fetch_doc_content(doc_token: str, doc_type: str, config: dict) -> str:
 
     elif doc_type == "wiki":
         # 先获取 wiki node 信息
-        node_data = api_get(f"/wiki/v2/spaces/get_node", {"token": doc_token}, config)
+        node_data = api_get("/wiki/v2/spaces/get_node", {"token": doc_token}, config)
         obj_token = node_data.get("data", {}).get("node", {}).get("obj_token", doc_token)
         obj_type = node_data.get("data", {}).get("node", {}).get("obj_type", "docx")
         return fetch_doc_content(obj_token, obj_type, config)
@@ -816,7 +816,6 @@ def fetch_doc_content(doc_token: str, doc_type: str, config: dict) -> str:
 
 def collect_docs(user: dict, doc_limit: int, config: dict) -> str:
     """采集目标用户的文档"""
-    import re
     user_open_id = user.get("open_id") or user.get("user_id", "")
     name = user.get("name", "")
 
@@ -825,7 +824,7 @@ def collect_docs(user: dict, doc_limit: int, config: dict) -> str:
         return f"# 文档内容\n\n未找到 {name} 相关文档\n"
 
     lines = [
-        f"# 文档内容（自动采集）",
+        "# 文档内容（自动采集）",
         f"目标：{name}",
         f"共 {len(docs)} 篇",
         "",
@@ -846,11 +845,11 @@ def collect_docs(user: dict, doc_limit: int, config: dict) -> str:
 
         content = fetch_doc_content(doc_token, doc_type or "docx", config)
         if not content or len(content.strip()) < 20:
-            print(f"    内容为空，跳过", file=sys.stderr)
+            print("    内容为空，跳过", file=sys.stderr)
             continue
 
         lines += [
-            f"---",
+            "---",
             f"## 《{title}》",
             f"链接：{url}",
             f"创建人：{doc.get('creator', '')}",

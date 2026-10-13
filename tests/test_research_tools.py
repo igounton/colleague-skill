@@ -3,16 +3,11 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
-import sys
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from research.merge_research import merge_research  # noqa: E402
-from research.quality_check import evaluate_skill_text  # noqa: E402
-from research.srt_to_transcript import clean_subtitle_text, convert_file  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+from research.merge_research import merge_research
+from research.quality_check import evaluate_skill_text
+from research.srt_to_transcript import clean_subtitle_text, convert_file
 
 
 class SubtitleTranscriptTest(unittest.TestCase):

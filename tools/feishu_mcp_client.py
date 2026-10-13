@@ -43,7 +43,6 @@ import json
 import argparse
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import credentials  # noqa: E402

@@ -7,6 +7,7 @@ import argparse
 import platform
 from pathlib import Path
 
+from hosts import generated_skills_dir
 from install_generated_skill_common import (
     render_installed_markdown,
     install_generated_skill as install_generated_skill_common,
@@ -16,12 +17,12 @@ from install_generated_skill_common import (
 
 def default_claude_skills_dir() -> Path:
     """Return the default Claude Code skills directory."""
-    return Path.home() / ".claude" / "skills"
+    return generated_skills_dir("claude-code")
 
 
 def default_claude_commands_dir() -> Path:
     """Return the default Claude Code commands directory."""
-    return Path.home() / ".claude" / "commands"
+    return generated_skills_dir("claude-code").parent / "commands"
 
 
 def should_install_command_shim(system_name: str | None = None) -> bool:

@@ -4,7 +4,7 @@
 
 **이전 이름: Colleague Skill / colleague-skill.**
 
-![Distilly — Distill how they think into Person Profiles for Agents](../social-preview-distilly-v10.png)
+![Distilly — Distill how they think into Person Profiles for Agents](../social-preview.png)
 
 ### **Distill how they think.**
 

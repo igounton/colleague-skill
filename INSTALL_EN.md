@@ -97,8 +97,11 @@ configuration exists, they can read legacy configuration from
 `~/.colleague-skill/` without moving it.
 
 ```bash
-# Install the declared Python dependencies
+# Install the core Python dependency
 pip3 install -r requirements.txt
+
+# Optional collector extras (Playwright, Slack, keyring, ...); pick what you need or install all
+pip3 install -r requirements-optional.txt
 
 # Browser runtime used by DingTalk and Lark browser collection
 playwright install chromium

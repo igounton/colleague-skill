@@ -8,14 +8,9 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-TOOLS_DIR = REPO_ROOT / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-import owner_profile  # noqa: E402
-from skill_presets import normalize_character  # noqa: E402
+from _paths import REPO_ROOT, TOOLS_DIR
+import owner_profile
+from skill_presets import normalize_character
 
 
 PROFILE = """# Owner profile: Tianyi

@@ -2,24 +2,19 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-
-TOOLS_DIR = Path(__file__).resolve().parents[1] / "tools"
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-import skill_writer  # noqa: E402
-import version_manager  # noqa: E402
-from skill_presets import (  # noqa: E402
+import _paths  # noqa: F401  (puts tools/ on sys.path)
+import skill_writer
+import version_manager
+from skill_presets import (
     get_character_preset,
     get_research_profile_preset,
     resolve_existing_storage_root,
 )
-from skill_schema import validate_path_segment  # noqa: E402
+from skill_schema import validate_path_segment
 
 
 class SkillWriterTest(unittest.TestCase):

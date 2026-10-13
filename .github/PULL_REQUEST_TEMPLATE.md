@@ -30,7 +30,7 @@ Closes #
 - [ ] I read [CONTRIBUTING.md](../CONTRIBUTING.md)
 - [ ] Docs updated if behavior or usage changed (README / SKILL.md / INSTALL.md)
 - [ ] No secrets, tokens, or personal data committed
-- [ ] New dependencies added to `requirements.txt` (if any)
+- [ ] New dependencies added to `requirements.txt` or `requirements-optional.txt` (if any)
 - [ ] Tests added/updated for new functionality (or reason explained above)
 
 ## Screenshots (optional)

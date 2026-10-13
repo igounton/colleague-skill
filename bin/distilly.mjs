@@ -17,37 +17,34 @@ const packageMetadata = JSON.parse(
   readFileSync(join(packageRoot, "package.json"), "utf8"),
 );
 
-const payloadEntries = [
-  "SKILL.md",
-  "prompts",
-  "tools",
-  "requirements.txt",
-  "INSTALL.md",
-  "INSTALL_EN.md",
-  "LICENSE",
-  "CITATION.cff",
-];
+// The installed payload is the npm publish list minus this CLI.
+const payloadEntries = packageMetadata.files
+  .map((entry) => entry.replace(/\/$/, ""))
+  .filter((entry) => entry !== "bin");
 
-const hosts = {
-  "claude-code": () => join(homedir(), ".claude", "skills", "distilly"),
-  openclaw: () =>
-    join(homedir(), ".openclaw", "workspace", "skills", "distilly"),
-  hermes: () =>
-    join(homedir(), ".hermes", "skills", "openclaw-imports", "distilly"),
-  codex: () => join(homedir(), ".agents", "skills", "distilly"),
-  "deepseek-harness": () =>
-    join(process.env.DSH_HOME || join(homedir(), ".dsh"), "skills", "distilly"),
-  pi: () => join(homedir(), ".pi", "agent", "skills", "distilly"),
-  "grok-build": () => join(homedir(), ".grok", "skills", "distilly"),
-  opencode: () =>
-    join(homedir(), ".config", "opencode", "skills", "distilly"),
-};
+// Host install paths are shared with the Python installers in tools/hosts.json.
+const hostSpecs = JSON.parse(
+  readFileSync(join(packageRoot, "tools", "hosts.json"), "utf8"),
+).hosts;
 
-const aliases = {
-  claude: "claude-code",
-  deepseek: "deepseek-harness",
-  grok: "grok-build",
-};
+function hostSkillsDir(spec) {
+  const [first, ...rest] = spec.skills_dir;
+  const envHome = spec.home_env && process.env[spec.home_env];
+  return envHome ? join(envHome, ...rest) : join(homedir(), first, ...rest);
+}
+
+const hosts = Object.fromEntries(
+  Object.entries(hostSpecs).map(([name, spec]) => [
+    name,
+    () => join(hostSkillsDir(spec), "distilly"),
+  ]),
+);
+
+const aliases = Object.fromEntries(
+  Object.entries(hostSpecs).flatMap(([name, spec]) =>
+    (spec.aliases || []).map((alias) => [alias, name]),
+  ),
+);
 
 function printHelp() {
   console.log(`Distilly ${packageMetadata.version}
@@ -59,8 +56,7 @@ Usage:
   distilly install --path <path-ending-in-distilly> [--force]
 
 Hosts:
-  claude-code, openclaw, hermes, codex, deepseek-harness,
-  pi, grok-build, opencode
+  ${Object.keys(hosts).join(", ")}
 
 Options:
   --force    Preserve an existing install as a timestamped backup, then install
