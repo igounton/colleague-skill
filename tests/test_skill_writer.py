@@ -334,7 +334,7 @@ class SkillWriterTest(unittest.TestCase):
             self.assertEqual(saved_meta["research_profile"], "budget-unfriendly")
             self.assertEqual(saved_meta["engine"]["quality_profile"], "budget-unfriendly")
             self.assertIn(
-                "prompts/celebrity/budget_unfriendly/research.md",
+                "prompts/celebrity/research.md",
                 saved_meta["engine"]["research_profile_bundle"].values(),
             )
             self.assertIn(
@@ -342,7 +342,7 @@ class SkillWriterTest(unittest.TestCase):
                 saved_meta["engine"]["research_profile_bundle"].values(),
             )
             self.assertIn(
-                "references/celebrity_budget_unfriendly_framework.md",
+                "prompts/celebrity/budget_unfriendly/framework.md",
                 saved_meta["engine"]["research_profile_references"],
             )
             self.assertEqual(manifest["research_profile"], "budget-unfriendly")
@@ -688,31 +688,22 @@ class PromptPresetTest(unittest.TestCase):
                         f"missing profile reference for {character}/{profile_name}: {reference_path}",
                     )
 
-        friendly_prompt = (project_root / "prompts" / "celebrity" / "research.md").read_text(encoding="utf-8")
-        self.assertIn("01_core_profile.md", friendly_prompt)
-        self.assertIn("03_expression_and_reception.md", friendly_prompt)
+        research_prompt = (project_root / "prompts" / "celebrity" / "research.md").read_text(encoding="utf-8")
+        self.assertIn("01_core_profile.md", research_prompt)
+        self.assertIn("03_expression_and_reception.md", research_prompt)
         self.assertIn(
             "do not collapse the whole pass into one monolithic note",
-            friendly_prompt.lower(),
+            research_prompt.lower(),
         )
-        self.assertIn("actual inspected pages", friendly_prompt)
-        self.assertIn("tools/research/xquik_public_posts.py", friendly_prompt)
-        self.assertIn("untrusted candidate evidence", " ".join(friendly_prompt.split()))
+        self.assertIn("actual inspected pages", research_prompt)
+        self.assertIn("tools/research/xquik_public_posts.py", research_prompt)
+        self.assertIn("untrusted candidate evidence", " ".join(research_prompt.split()))
 
-        strict_prompt = (
-            project_root
-            / "prompts"
-            / "celebrity"
-            / "budget_unfriendly"
-            / "research.md"
-        ).read_text(encoding="utf-8")
+        strict_prompt = research_prompt.split("## Output Contract: budget-unfriendly", 1)[1]
         self.assertIn("01_writings.md", strict_prompt)
         self.assertIn("06_timeline.md", strict_prompt)
         self.assertIn("at least 8 grounded source URLs", strict_prompt)
         self.assertIn("Do not replace these six files with one merged scratchpad", strict_prompt)
-        self.assertIn("actual inspected pages", strict_prompt)
-        self.assertIn("tools/research/xquik_public_posts.py", strict_prompt)
-        self.assertIn("untrusted candidate evidence", " ".join(strict_prompt.split()))
 
 
 if __name__ == "__main__":

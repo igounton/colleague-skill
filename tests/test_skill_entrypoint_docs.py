@@ -42,6 +42,16 @@ README_INVOCATION_PATTERNS = (
     re.compile(r"(?<![\w.-])/skill:\{character\}-\{slug\}"),
 )
 HAN_CHARACTER = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
+BUNDLED_PATH = re.compile(r"\b((?:prompts|tools)/[\w./-]+\.(?:md|py|sh))\b")
+BARE_TOOL_CALL = re.compile(r"(?:python3|bash) \"?tools/")
+ROUTER_MAX_LINES = 80
+RESEARCH_FLOOR = re.compile(r"`([A-Z][\w -]+?) (?:>=|=) \d+`")
+
+
+def _instruction_files() -> dict[str, str]:
+    """Everything the agent may read while running the Skill: the router plus prompts."""
+    paths = [ROOT / "SKILL.md", *sorted((ROOT / "prompts").rglob("*.md"))]
+    return {path.relative_to(ROOT).as_posix(): path.read_text(encoding="utf-8") for path in paths}
 
 
 class SkillEntrypointDocsTest(unittest.TestCase):
@@ -98,42 +108,53 @@ class SkillEntrypointDocsTest(unittest.TestCase):
 
     def test_root_skill_uses_distilly_entrypoint(self) -> None:
         content = (ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("name: distilly", content)
-        self.assertIn("`/distilly`", content)
-        self.assertIn("`$distilly`", content)
-        self.assertIn("`/skill:distilly`", content)
-        self.assertNotIn("name: dot-skill", content)
-        self.assertNotIn("`/dot-skill`", content)
-        self.assertIn("compatible hosts", content.lower())
-        self.assertIn("Grok Build", content)
-        self.assertIn("Grok Bot", content)
-        self.assertIn("Pi coding agent", content)
-        self.assertIn("Management Operations", content)
-        self.assertIn("tools/skill_writer.py", content)
-        self.assertIn("tools/research/xquik_public_posts.py", content)
-        self.assertIn("prompts/celebrity/research.md", content)
-        self.assertIn("budget-unfriendly", content)
-        self.assertIn("references/celebrity_budget_unfriendly_framework.md", content)
-        self.assertIn("01_core_profile.md", content)
-        self.assertIn("03_expression_and_reception.md", content)
-        self.assertIn("Files scanned >= 3", content)
-        self.assertIn("Unique URLs >= 2", content)
-        self.assertIn("Potential long quote lines = 0", content)
-        self.assertIn("actual inspected pages", content)
-        self.assertIn("01_writings.md", content)
-        self.assertIn("06_timeline.md", content)
-        self.assertIn("Files scanned >= 6", content)
-        self.assertIn("Unique URLs >= 8", content)
-        self.assertIn("Primary-source markers >= 3", content)
-        self.assertIn("research_audit.md", content)
-        self.assertIn("--work-patch /tmp/distilly_{slug}_work_patch.md", content)
-        self.assertIn("Do not hand-edit `work.md`", content)
+        frontmatter = content.split("---", 2)[1]
+        self.assertIn("name: distilly", frontmatter)
+        self.assertNotIn("dot-skill", content)
+        for invocation in ("`/distilly`", "`$distilly`", "`/skill:distilly`"):
+            self.assertIn(invocation, content)
+        # Bundled resources resolve against the loaded Skill, never the shell cwd.
         self.assertIn("{distilly_skill_root}", content)
         self.assertIn("${CLAUDE_SKILL_DIR}", content)
-        self.assertIn("Do not assume the shell's current working directory", content)
-        self.assertNotIn("python3 tools/", content)
-        self.assertNotIn("`/list-skills`", content)
-        self.assertNotIn("Compatibility aliases:", content)
+
+    def test_router_stays_short_and_routes_every_flow(self) -> None:
+        router = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        # Hosts load SKILL.md in full on every trigger; flow detail loads on demand.
+        self.assertLessEqual(len(router.splitlines()), ROUTER_MAX_LINES)
+        for flow in sorted((ROOT / "prompts" / "flows").glob("*.md")):
+            self.assertIn(flow.relative_to(ROOT).as_posix(), router, f"router never reaches {flow.name}")
+
+    def test_instruction_files_reference_existing_resources(self) -> None:
+        for path, content in _instruction_files().items():
+            self.assertIsNone(
+                BARE_TOOL_CALL.search(content),
+                f"{path} runs a bundled tool relative to the shell cwd",
+            )
+            for reference in BUNDLED_PATH.findall(content):
+                self.assertTrue(
+                    (ROOT / reference).exists(),
+                    f"{path} references missing {reference}",
+                )
+
+    def test_every_prompt_is_reachable(self) -> None:
+        referenced = set()
+        for content in _instruction_files().values():
+            referenced.update(BUNDLED_PATH.findall(content))
+        referenced.update(
+            BUNDLED_PATH.findall((ROOT / "tools" / "skill_presets.py").read_text(encoding="utf-8"))
+        )
+        for prompt_path in sorted((ROOT / "prompts").rglob("*.md")):
+            relative = prompt_path.relative_to(ROOT).as_posix()
+            self.assertTrue(relative in referenced, f"nothing loads {relative}")
+
+    def test_research_floors_match_merge_summary(self) -> None:
+        summary_source = (ROOT / "tools" / "research" / "merge_research.py").read_text(encoding="utf-8")
+        floors = set()
+        for content in _instruction_files().values():
+            floors.update(RESEARCH_FLOOR.findall(content))
+        self.assertTrue(floors, "no research quality floors documented")
+        for metric in floors:
+            self.assertIn(f"- {metric}:", summary_source, f"merge summary never reports {metric!r}")
 
     def test_readme_quick_start_and_install_detail_contract(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -254,8 +275,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
             ROOT / "CITATION.cff",
             ROOT / "INSTALL_EN.md",
             ROOT / "prompts" / "celebrity" / "research.md",
-            ROOT / "prompts" / "celebrity" / "budget_unfriendly" / "research.md",
-            ROOT / "references" / "celebrity_budget_unfriendly_framework.md",
+            ROOT / "prompts" / "celebrity" / "budget_unfriendly" / "framework.md",
             ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
         ]
         single_language_paths.extend(
@@ -289,11 +309,6 @@ class SkillEntrypointDocsTest(unittest.TestCase):
             self.assertIsNone(
                 HAN_CHARACTER.search(prompt_path.read_text(encoding="utf-8")),
                 f"Chinese copy remains in {prompt_path.relative_to(ROOT)}",
-            )
-        for reference_path in sorted((ROOT / "references").rglob("*.md")):
-            self.assertIsNone(
-                HAN_CHARACTER.search(reference_path.read_text(encoding="utf-8")),
-                f"Chinese copy remains in {reference_path.relative_to(ROOT)}",
             )
 
         for name in ("README_JA.md", "ROADMAP_JA.md"):

@@ -20,7 +20,6 @@ const packageMetadata = JSON.parse(
 const payloadEntries = [
   "SKILL.md",
   "prompts",
-  "references",
   "tools",
   "requirements.txt",
   "INSTALL.md",

@@ -201,7 +201,9 @@ class OwnerProfileTest(unittest.TestCase):
         self.assertIn("owner_profile.py", result.stderr)
 
     def test_root_skill_documents_owner_flow(self) -> None:
-        content = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        router = (REPO_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("prompts/flows/owner.md", router)
+        content = (REPO_ROOT / "prompts" / "flows" / "owner.md").read_text(encoding="utf-8")
         self.assertIn("prompts/owner/intake.md", content)
         self.assertIn("tools/owner_profile.py", content)
         for prompt in ("intake.md", "profile_builder.md"):
