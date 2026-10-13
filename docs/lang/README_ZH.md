@@ -44,7 +44,7 @@ Distilly 是 Agent 工作流中的人物建模层。它把你提供的材料整�
 
 <br>
 
-[🆕 Distilly 能做什么](#-distilly-现在能做什么) · [📦 数据来源](#-支持的数据来源) · [⚡ 安装](#-安装) · [🚀 使用](#-使用) · [✨ 效果示例](#-效果示例) · [💬 Discord](https://discord.gg/NVX66RxWZv)
+[🆕 Distilly 能做什么](#-distilly-现在能做什么) · [📦 数据来源](#-支持的数据来源) · [⚡ 安装](#-安装) · [🚀 使用](#-使用) · [✨ 效果示例](#-效果示例) · [📝 引用](#-引用) · [💬 Discord](https://discord.gg/NVX66RxWZv)
 
 [**English**](../../README.md) · [**Español**](README_ES.md) · [**Deutsch**](README_DE.md) · [**日本語**](README_JA.md) · [**Русский**](README_RU.md) · [**Português**](README_PT.md) · [**한국어**](README_KO.md)
 
@@ -130,6 +130,22 @@ Created by [@titanwings](https://github.com/titanwings)
 **Grok Bot 预览：**Grok Bot 支持 saved/private Skills，但官方文档没有说明可直接导入本地 `SKILL.md`。可手工迁移 Distilly 流程为 saved Skill；直接安装仓库尚未验证。
 
 蒸馏出的 Person Profile 会封装成 Agent Skill，并可安装到任意受支持的宿主。
+
+---
+
+## 🤖 个人 Agent
+
+Distilly 也面向大家日常在用的个人 Agent。它们各自保存记忆、连接账号，所以 Person Profile 应当能直接带进去，而不是每次从零开始。
+
+<table>
+<tr>
+<td align="center" width="20%"><a href="https://x.ai"><picture><source media="(prefers-color-scheme: dark)" srcset="../assets/hosts/grok-build-mark-dark.png"><img src="../assets/hosts/grok-build-mark-light.png" alt="Grok Bot" height="46"></picture></a><br><b>Grok Bot</b><br><sub>saved Skill · 预览</sub></td>
+<td align="center" width="20%"><a href="https://www.meta.ai"><img src="../assets/hosts/meta-mark.svg" alt="Meta Muse" height="40"></a><br><b>Meta Muse</b><br><sub>画像交接 · 规划中</sub></td>
+<td align="center" width="20%"><a href="https://openai.com"><picture><source media="(prefers-color-scheme: dark)" srcset="../assets/hosts/openai-mark-dark.svg"><img src="../assets/hosts/openai-mark-light.svg" alt="OpenAI Dots" height="40"></picture></a><br><b>OpenAI Dots</b><br><sub>画像交接 · 规划中</sub></td>
+<td align="center" width="20%"><a href="https://github.com/openclaw/openclaw"><picture><source media="(prefers-color-scheme: dark)" srcset="../assets/hosts/openclaw-wordmark-dark.svg"><img src="../assets/hosts/openclaw-wordmark-light.svg" alt="OpenClaw" height="38"></picture></a><br><sub>原生 Skill</sub></td>
+<td align="center" width="20%"><a href="https://github.com/NousResearch/hermes-agent"><img src="../assets/hosts/hermes-agent-wordmark.png" alt="Hermes Agent" height="32"></a><br><sub>原生 Skill</sub></td>
+</tr>
+</table>
 
 ---
 
@@ -296,6 +312,26 @@ Distilly 当前的创建器以 **Persona** 为通用底座，不同家族按场�
 > **[COLLEAGUE.SKILL: Automated AI Skill Generation via Expert Knowledge Distillation](https://arxiv.org/pdf/2605.31264)** ([arXiv](https://arxiv.org/abs/2605.31264) · [arXiv PDF](https://arxiv.org/pdf/2605.31264))
 >
 > 这是 Distilly 前身 **COLLEAGUE.SKILL / colleague-skill（原同事 Skill）** 的技术论文，详细介绍了 Work Skill + Persona 的双层架构、多源数据采集与 Skill 生成机制，也是今天 `colleague` 家族的理论基础。relationship / celebrity 家族的架构扩展会另起论文。
+
+---
+
+## 📝 引用
+
+如果你在研究或应用中使用了 **Distilly** 或 **COLLEAGUE.SKILL**，请引用技术报告：
+
+```bibtex
+@misc{zhou2026colleagueskill,
+  title        = {COLLEAGUE.SKILL: Automated AI Skill Generation via Expert Knowledge Distillation},
+  author       = {Tianyi Zhou and Dongrui Liu and Leitao Yuan and Jing Shao and Xia Hu},
+  year         = {2026},
+  eprint       = {2605.31264},
+  archivePrefix = {arXiv},
+  primaryClass = {cs.AI},
+  url          = {https://arxiv.org/abs/2605.31264}
+}
+```
+
+也可以使用 [CITATION.cff](../../CITATION.cff) 中的机器可读引用信息。
 
 ---
 

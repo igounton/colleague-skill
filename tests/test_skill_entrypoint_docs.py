@@ -229,14 +229,10 @@ class SkillEntrypointDocsTest(unittest.TestCase):
         for readme_path in (ROOT / "docs" / "lang").glob("README_*.md"):
             content = readme_path.read_text(encoding="utf-8")
             self.assertNotIn("/dot-skill", content, f"stale /dot-skill in {readme_path.name}")
-            self._assert_readme_support_contract(content, readme_path.name)
-            self._assert_readme_quick_start(
-                content,
-                readme_path.name,
-                "(../../INSTALL.md)"
-                if readme_path.name == "README_ZH.md"
-                else "(../../INSTALL_EN.md)",
-            )
+            if readme_path.name == "README_ZH.md":
+                # The other languages are short landing pages (see test_translation_sync.py).
+                self._assert_readme_support_contract(content, readme_path.name)
+                self._assert_readme_quick_start(content, readme_path.name, "(../../INSTALL.md)")
             self.assertIn(
                 "https://github.com/titanwings/distilly",
                 content,
@@ -279,8 +275,7 @@ class SkillEntrypointDocsTest(unittest.TestCase):
             ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md",
         ]
         single_language_paths.extend(
-            ROOT / "docs" / "lang" / f"{stem}_{language}.md"
-            for stem in ("README", "ROADMAP")
+            ROOT / "docs" / "lang" / f"README_{language}.md"
             for language in ("DE", "ES", "KO", "PT", "RU")
         )
         single_language_paths.extend(
@@ -311,10 +306,9 @@ class SkillEntrypointDocsTest(unittest.TestCase):
                 f"Chinese copy remains in {prompt_path.relative_to(ROOT)}",
             )
 
-        for name in ("README_JA.md", "ROADMAP_JA.md"):
-            content = (ROOT / "docs" / "lang" / name).read_text(encoding="utf-8")
-            for stale_phrase in ("原同事", "留痕", "企業微信"):
-                self.assertNotIn(stale_phrase, content, f"Chinese phrase in {name}")
+        content = (ROOT / "docs" / "lang" / "README_JA.md").read_text(encoding="utf-8")
+        for stale_phrase in ("原同事", "留痕", "企業微信"):
+            self.assertNotIn(stale_phrase, content, "Chinese phrase in README_JA.md")
 
     def test_code_uses_new_names_with_explicit_legacy_fallbacks(self) -> None:
         writer = (ROOT / "tools" / "skill_writer.py").read_text(encoding="utf-8")

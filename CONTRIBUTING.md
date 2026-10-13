@@ -2,7 +2,7 @@
 
 > Formerly: **Colleague Skill / colleague-skill**. The current creator entrypoint is `/distilly` on slash-name hosts.
 
-Thank you for considering a contribution! Distilly turns source material about a person into reusable Skills for AI agents and compatible bots, and it is only as good as its community.
+Thank you for considering a contribution! Distilly turns source material about a person into a reusable Person Profile, packaged as an Agent Skill, for AI agents and compatible bots, and it is only as good as its community.
 
 ---
 

@@ -2,7 +2,7 @@
 
 # Distilly Roadmap
 
-### From Colleague Skill (`colleague.skill`) to Distilly — Distill people into reusable Skills for AI agents and compatible bots
+### From Colleague Skill (`colleague.skill`) to Distilly — Distill people into reusable Person Profiles for AI agents and compatible bots
 
 <br>
 
@@ -15,13 +15,11 @@ you distilled professors, exes, yourselves, even fictional characters.
 
 **So we decided to evolve Colleague Skill (`colleague.skill`) into Distilly.**
 
-Anyone can become a reusable `.skill` for AI agents and compatible bots.
+Anyone can become a reusable Person Profile, packaged as an Agent Skill, for AI agents and compatible bots.
 
 <br>
 
 *Last updated: 2026-08-23*
-
-[**Chinese**](docs/lang/ROADMAP_ZH.md) · [**Spanish**](docs/lang/ROADMAP_ES.md) · [**German**](docs/lang/ROADMAP_DE.md) · [**Japanese**](docs/lang/ROADMAP_JA.md) · [**Russian**](docs/lang/ROADMAP_RU.md) · [**Portuguese**](docs/lang/ROADMAP_PT.md) · [**Korean**](docs/lang/ROADMAP_KO.md)
 
 </div>
 
