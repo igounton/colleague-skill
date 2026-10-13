@@ -20,6 +20,7 @@ from typing import Optional
 from skill_presets import (
     get_character_preset,
     normalize_character,
+    normalize_skill_character,
     normalize_research_profile,
     resolve_existing_storage_root,
     resolve_storage_root,
@@ -175,10 +176,10 @@ def render_combined_skill(meta: dict, work_content: str, persona_content: str) -
 
 
 _PERSONA_HANDOFF_PATTERNS = (
-    re.compile(r"如果被问到职责范围外的问题，以该同事的方式回应（参见 Persona 部分）。\s*"),
+    re.compile(r"如果被问到[^。\n]*职责范围[^。\n]*Persona[^。\n]*。\s*"),
     re.compile(
-        r"If (?:you are )?asked (?:a question )?outside (?:your|the) "
-        r"(?:recorded )?responsibilities[^.\n]*Persona[^.\n]*\.\s*",
+        r"If (?:you are )?asked (?:a question |about something )?outside (?:of )?(?:your|the) "
+        r"(?:recorded )?(?:scope of )?(?:your )?responsibilit(?:y|ies)[^.\n]*Persona[^.\n]*\.\s*",
         re.IGNORECASE,
     ),
 )
@@ -648,7 +649,7 @@ def main() -> None:
     if args.name:
         meta["name"] = args.name
         meta["display_name"] = args.name
-    meta["character"] = normalize_character(
+    meta["character"] = normalize_skill_character(
         meta.get("character", meta.get("type", requested_character))
     )
     meta["research_profile"] = normalize_research_profile(

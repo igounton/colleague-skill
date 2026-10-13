@@ -215,6 +215,16 @@ def normalize_character(character: str | None) -> str:
     return normalized if normalized in CHARACTER_PRESETS else "colleague"
 
 
+def normalize_skill_character(character: str | None) -> str:
+    """Normalize the family stored in a generated skill's metadata.
+
+    Generated skills are never owner profiles. Before the owner family existed,
+    ``self`` and ``yourself`` meant ``relationship``, so legacy skills keep that.
+    """
+    normalized = normalize_character(character)
+    return "relationship" if normalized == "owner" else normalized
+
+
 def get_character_preset(character: str | None) -> dict:
     """Return the preset for the given character family."""
     return CHARACTER_PRESETS[normalize_character(character)]

@@ -168,12 +168,17 @@ def _read_json(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+def _server_names(value: object) -> list[str]:
+    return list(value.keys()) if isinstance(value, dict) else []
+
+
 def _json_mcp_names(path: Path) -> list[str]:
     data = _read_json(path)
-    names = list((data.get("mcpServers") or {}).keys())
-    for project in (data.get("projects") or {}).values():
+    names = _server_names(data.get("mcpServers"))
+    projects = data.get("projects")
+    for project in projects.values() if isinstance(projects, dict) else ():
         if isinstance(project, dict):
-            names.extend((project.get("mcpServers") or {}).keys())
+            names.extend(_server_names(project.get("mcpServers")))
     return names
 
 
@@ -184,7 +189,7 @@ _YAML_KEY = re.compile(r"^(\s+)([A-Za-z0-9_.-]+)\s*:", re.M)
 def _codex_mcp_names(path: Path) -> list[str]:
     try:
         return _TOML_TABLE.findall(path.read_text(encoding="utf-8"))
-    except OSError:
+    except (OSError, ValueError):
         return []
 
 
@@ -192,7 +197,7 @@ def _yaml_section_keys(path: Path, section: str) -> list[str]:
     """Return the direct child keys of a top-level YAML section, without a YAML parser."""
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
+    except (OSError, ValueError):
         return []
     names: list[str] = []
     inside = False

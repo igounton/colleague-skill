@@ -15,7 +15,7 @@ from pathlib import Path
 from skill_presets import (
     get_character_preset,
     get_research_profile_preset,
-    normalize_character,
+    normalize_skill_character,
     normalize_research_profile,
 )
 
@@ -68,7 +68,7 @@ def flatten_legacy_tags(meta: dict) -> list[str]:
 
 def resolve_character(meta: dict, explicit_character: str | None = None) -> str:
     """Resolve the active character family from new or legacy fields."""
-    return normalize_character(
+    return normalize_skill_character(
         explicit_character
         or meta.get("character")
         or meta.get("type")

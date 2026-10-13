@@ -96,6 +96,16 @@ class DiscoverTest(unittest.TestCase):
         self.assertNotIn("secret-value-123", json.dumps(report))
         self.assertNotIn("gmail-mcp", json.dumps(report))
 
+    def test_malformed_configs_do_not_stop_discovery(self) -> None:
+        self.write(".claude.json", json.dumps({"mcpServers": ["gmail"], "projects": []}))
+        (self.home / ".codex").mkdir()
+        (self.home / ".codex" / "config.toml").write_bytes(b"\xff\xfe")
+        self.write(".hermes/config.yaml", "mcp_servers:\n  slack:\n    command: s\n")
+
+        report = owner_sources.discover()
+
+        self.assertEqual([item["name"] for item in report["connectors"]], ["slack"])
+
     def test_cli_json(self) -> None:
         self.write(".claude.json", json.dumps({"mcpServers": {"x": {}}}))
         result = subprocess.run(

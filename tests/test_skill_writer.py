@@ -262,6 +262,25 @@ class SkillWriterTest(unittest.TestCase):
             self.assertNotIn(skill_writer.WORK_ONLY_FALLBACK_ZH, zh_combined)
             self.assertNotIn(skill_writer.WORK_ONLY_FALLBACK_EN, en_combined)
 
+    def test_work_only_skill_drops_handoff_from_current_work_builder_prompt(self) -> None:
+        prompt = (Path(__file__).resolve().parents[1] / "prompts" / "shared" / "work_builder.md").read_text(encoding="utf-8")
+        handoff = next(line for line in prompt.splitlines() if "Persona" in line and line.startswith("If asked"))
+        zh_handoff = "如果被问到职责范围之外的问题，请按这位同事的方式回应（参见 Persona 部分）。"
+        self.assertNotIn("Persona", skill_writer.work_only_content(f"## Rules\n\n{handoff}\n", chinese=False)
+                         .replace(skill_writer.WORK_ONLY_FALLBACK_EN, ""))
+        self.assertNotIn("Persona", skill_writer.work_only_content(f"## 规则\n\n{zh_handoff}\n", chinese=True)
+                         .replace(skill_writer.WORK_ONLY_FALLBACK_ZH, ""))
+
+    def test_legacy_self_skill_stays_relationship(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_dir = Path(tmp_dir) / "skills" / "relationship"
+            skill_dir = skill_writer.create_skill(
+                base_dir, "me", {"name": "Me", "type": "self"}, "Work body", "Persona body"
+            )
+            meta = json.loads((skill_dir / "meta.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["character"], "relationship")
+            self.assertEqual(meta["artifacts"]["combined_name"], "relationship-me")
+
     def test_create_celebrity_adds_research_dirs_and_toolchain(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_dir:
             base_dir = Path(tmp_dir) / "skills" / "celebrity"
